@@ -393,9 +393,9 @@
         "$ pytest tests/fetch -q",
         "Skips robots-blocked paths, rejects off-allowlist URLs, limits to 1 request per second per host, converts HTML to Markdown"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "E1-2 human gate skipped per owner. Allowlist: *.example.test, *.example.invalid, localhost/127.0.0.1 for fixtures, plus per-job company_hosts from the posting domain (assumed until E2-2 wires it)."
     },
     {
       "id": "E2-4",

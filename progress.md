@@ -33,7 +33,7 @@ Closed: add new entries as files in `progress/` (see `progress/README.md`), not 
 ## 2026-11-23: PR review request labels and controls
 
 - Extended `agent-review.yml`: `prepare` job, auto `review:claude` / `review:cursor` on ready PRs,
-  trigger labels `review:request` / `review:rerequest`, `/review` and `/rereview` comments,
+  trigger labels `review:request` / `review:rerequest`, `/review` and `/rerequest` comments,
   `workflow_dispatch`, and re-review context via `prior-review-comments.md`.
 - New labels in `.github/labels.json`; documented in `AGENTS.md`, `docs/github-setup.md`, PR template.
 - PRs #52/#54 skipped reviewers because `ENABLE_AGENTS` is not `true` (not a workflow bug).
