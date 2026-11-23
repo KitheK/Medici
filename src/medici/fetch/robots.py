@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 from urllib.robotparser import RobotFileParser
@@ -10,6 +11,7 @@ from urllib.robotparser import RobotFileParser
 USER_AGENT = "Medici/0.0.1 (respects robots.txt; job-posting research helper)"
 
 _CACHE_TTL = 3600.0
+_DISALLOW_ALL = ["User-agent: *", "Disallow: /"]
 
 
 class RobotsCache:
@@ -41,8 +43,13 @@ class RobotsCache:
             with urlopen_fn(req, timeout=15) as resp:
                 body = resp.read().decode("utf-8", errors="replace")
             rp.parse(body.splitlines())
-        except OSError:
-            rp.parse([])
+        except HTTPError as err:
+            if 400 <= err.code < 500:
+                rp.parse([])
+            else:
+                rp.parse(_DISALLOW_ALL)
+        except (OSError, URLError):
+            rp.parse(_DISALLOW_ALL)
         self._parsers[host] = rp
         self._loaded_at[host] = now
         return rp
