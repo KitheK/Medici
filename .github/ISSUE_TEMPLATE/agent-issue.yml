@@ -1,0 +1,25 @@
+name: Agent issue
+description: A build issue for Claude Code or Cursor (mirrors an entry in issue_map.json)
+title: "[ID] Title"
+labels: ["agent"]
+assignees: ["KitheK"]
+body:
+  - type: input
+    id: id
+    attributes: {label: Issue ID, description: "Same ID as issue_map.json, e.g. E2-3"}
+    validations: {required: true}
+  - type: textarea
+    id: goal
+    attributes: {label: Goal, description: What this issue produces, and why}
+    validations: {required: true}
+  - type: textarea
+    id: files
+    attributes: {label: files_allowed, description: One glob per line}
+    validations: {required: true}
+  - type: textarea
+    id: acceptance
+    attributes: {label: Acceptance, description: "Lines starting with `$ ` are commands; the rest are reviewed by a person"}
+    validations: {required: true}
+  - type: textarea
+    id: deps
+    attributes: {label: Depends on}

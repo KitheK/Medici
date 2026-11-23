@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Adds the project owner as co-author to every commit that lacks the trailer.
+# Install with `make hooks`.
+exec git interpret-trailers --in-place --if-exists addIfDifferent \
+  --trailer "Co-authored-by: Kithe Kisia <63513739+KitheK@users.noreply.github.com>" "$1"

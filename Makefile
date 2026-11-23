@@ -1,6 +1,6 @@
 PY ?= python3
 
-.PHONY: install lint test privacy ci serve-fixtures validate-map next
+.PHONY: install lint test privacy ci serve-fixtures validate-map next hooks
 
 install:
 	$(PY) -m pip install -e ".[dev]"
@@ -25,3 +25,7 @@ validate-map:
 
 next:
 	$(PY) tools/issue_map.py next
+
+hooks:
+	git config core.hooksPath tools/hooks
+	@echo "commit-msg hook installed: commits get the project owner as co-author"

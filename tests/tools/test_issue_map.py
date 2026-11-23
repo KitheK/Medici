@@ -147,3 +147,19 @@ def test_files_allowed_glob_matching():
     assert cfa.disallowed(["src/fetch/a.py", "src/fetch/x/y.py", "issue_map.json"], allowed) == []
     stray = ["src/other.py", "src/fetch.py"]
     assert cfa.disallowed(stray, allowed) == stray
+
+
+# --- GitHub sync (pure parts) -----------------------------------------------
+
+def test_sync_body_links_dependencies_and_marks_commands():
+    from tools import sync_github as sg
+
+    data = im.load(im.DEFAULT_MAP)
+    index = im.by_id(data)
+    body = sg.render_body(index["E2-3"], index, {"H0-4": 5, "E1-2": 9})
+    assert "#5" in body and "#9" in body
+    assert "`pytest tests/fetch -q`" in body
+    assert "src/medici/fetch/AGENTS.md" in body
+    assert "medici-issue-id: E2-3" in body
+    assert "owner:claude-code" in sg.labels_of(index["E2-3"])
+    assert "human:decision" not in sg.labels_of(index["E0-1"])
