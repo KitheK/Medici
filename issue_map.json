@@ -584,8 +584,8 @@
         "$ pytest tests/optout -q",
         "A suppressed person never appears in output"
       ],
-      "status": "todo",
-      "passes": false,
+      "status": "done",
+      "passes": true,
       "notes": ""
     },
     {
