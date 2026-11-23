@@ -46,3 +46,11 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
 - Added `tests/resume/` with fabrication tests and a privacy-marked posting-injection test.
 - Owner skipped the E0-1 gate; E2-1 was not needed for this issue (no model client).
 - Next: E5-2 resume prompt/model call once E2-1 lands; E5-3 LaTeX render.
+
+## 2026-11-23: E5-3 LaTeX renderer
+
+- Added `src/medici/resume/render/` (`escape.py`, `render.py`), `templates/jakes.tex` (Jake's shell
+  with `@@MEDICI_*@@` macros), and tests for escaping and macro fill.
+- Branched from `issue/E5-1`; PDF compile remains E5-4. No contact/heading block in output yet
+  (`ResumeDocument` has no header fields).
+- Next: E5-4 sandboxed compile; E5-2 prompt when E2-1 lands.

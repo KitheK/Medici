@@ -715,9 +715,9 @@
         "$ pytest tests/resume -q",
         "Fills Jake's template macros and escapes & % $ # _ { } ~ ^ \\\\"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "Stacked on issue/E5-1 (PR #54). Owner skipped human gates. No resume heading/contact until a later issue adds fields to ResumeDocument."
     },
     {
       "id": "E5-4",
