@@ -32,7 +32,8 @@ Do not confuse the two: code you write calls the model; you are not the model.
 2. Run `make next`, or take the issue you were given. Work in its own git worktree and branch named
    for it: `issue/E2-3` by hand, `claude/issue-E2-3` or `cursor/issue-E2-3` when CI builds it.
    Claude Code and Cursor work in parallel on different issues (`tools/queue.py` gives each its own);
-   the other builder reviews your PR. Never review your own PR. See `docs/github-setup.md`.
+   the other builder reviews your PR. Never review your own PR. Agents only take issues a person
+   labelled `agent-queue` (now) or `agent-night` (scheduled run). See `docs/github-setup.md`.
 3. Read the issue in `issue_map.json`. Its `acceptance` list is the definition of done. Lines starting
    with `$ ` are commands that `complete` runs; the rest are checked by a reviewer.
 4. Write the failing test first, then the code. Mark tests that start the fixture site or a

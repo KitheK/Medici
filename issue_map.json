@@ -244,6 +244,37 @@
       "notes": ""
     },
     {
+      "id": "H1-6",
+      "title": "Mentor feedback on PRs: patterns, anti-patterns and inline fixes",
+      "epic": "H1",
+      "depends_on": [
+        "H0-2",
+        "H0-3",
+        "H1-2"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        ".github/workflows/agent-feedback.yml",
+        ".github/feedback-prompt.md",
+        "tools/post_feedback.py",
+        "tests/tools/test_post_feedback.py",
+        "tests/tools/test_workflows.py",
+        ".github/labels.json",
+        "docs/github-setup.md",
+        "progress.md"
+      ],
+      "acceptance": [
+        "$ pytest tests/tools/test_post_feedback.py tests/tools/test_workflows.py -q",
+        "Every PR gets one advisory review: purpose check, patterns and anti-patterns, inline suggested fixes, alternative approaches and concepts to learn; it never blocks a merge"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
       "id": "E0-1",
       "title": "Purpose, data map, retention and saved-network rules",
       "epic": "E0",

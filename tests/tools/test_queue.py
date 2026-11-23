@@ -55,3 +55,20 @@ def test_real_queue_offers_no_product_issue_until_the_human_gates_pass():
         for owner in q.BUILDERS:
             picked = q.pick(real, owner)
             assert picked is None or picked.startswith(("H0", "H1"))
+
+
+def test_only_restricts_the_queue_to_labelled_issues():
+    d = data(issue("E2-1"), issue("E2-2"))
+    assert q.pick(d, "claude-code", only={"E2-2"}) == "E2-2"
+    assert q.pick(d, "claude-code", only=set()) is None  # nothing labelled, nothing runs
+    assert q.pick(d, "claude-code", only=None) == "E2-1"  # no label filter
+
+
+def test_labelled_but_unready_issue_still_waits_for_its_dependencies():
+    d = data(issue("E2-1"), issue("E2-2", deps=["E2-1"]))
+    assert q.pick(d, "claude-code", only={"E2-2"}) is None
+
+
+def test_forced_issue_must_also_carry_the_label():
+    d = data(issue("E2-1"), issue("E2-2"))
+    assert q.pick(d, "claude-code", force="E2-1", only={"E2-2"}) is None

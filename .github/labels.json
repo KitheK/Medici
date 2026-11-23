@@ -2,7 +2,7 @@
   {
     "name": "agent",
     "color": "1d76db",
-    "description": "Built by Claude Code or Cursor"
+    "description": "Owned by an agent (Claude Code or Cursor), not a person"
   },
   {
     "name": "human",
@@ -130,16 +130,6 @@
     "description": "Batch runner"
   },
   {
-    "name": "claude-now",
-    "color": "8a63d2",
-    "description": "Run Claude Code on this issue now"
-  },
-  {
-    "name": "cursor-now",
-    "color": "8a63d2",
-    "description": "Run Cursor on this issue now"
-  },
-  {
     "name": "review:pass",
     "color": "0e8a16",
     "description": "Cross-review passed"
@@ -163,5 +153,20 @@
     "name": "epic:H1",
     "color": "d4c5f9",
     "description": "CI and agent workflows"
+  },
+  {
+    "name": "agent-queue",
+    "color": "1f6feb",
+    "description": "In the agent queue: the owning agent works on it now"
+  },
+  {
+    "name": "agent-night",
+    "color": "0b2a5b",
+    "description": "Agents pick this up only at the scheduled night run"
+  },
+  {
+    "name": "agent-feedback",
+    "color": "fbca04",
+    "description": "Ask the mentor reviewer to (re)run feedback on this PR"
   }
 ]

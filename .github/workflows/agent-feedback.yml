@@ -1,0 +1,63 @@
+# Mentor feedback: a learning-focused review of every PR, with inline suggested fixes.
+# Separate from the requirements gate (agent-review.yml): this is advice, never a required check,
+# and it never fails a PR. Runs when a PR is opened or marked ready, or when the `agent-feedback`
+# label is added (add it again to re-run after more commits; the label is removed afterwards).
+# Needs: secret CLAUDE_CODE_OAUTH_TOKEN, the Claude GitHub App, variable ENABLE_AGENTS=true.
+name: agent-feedback
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: feedback-${{ github.event.pull_request.number }}
+  cancel-in-progress: false   # other labels (review:pass...) also fire `labeled`; never cancel a live run
+
+jobs:
+  feedback:
+    if: >-
+      vars.ENABLE_AGENTS == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action != 'labeled' || github.event.label.name == 'agent-feedback') &&
+      !startsWith(github.head_ref, 'dependabot/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - uses: ./.github/actions/review-context
+        with:
+          pr: ${{ github.event.pull_request.number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load the mentor rubric
+        id: rubric
+        run: |
+          { echo 'text<<RUBRIC_EOF'; cat .github/feedback-prompt.md; echo 'RUBRIC_EOF'; } >> "$GITHUB_OUTPUT"
+      - uses: anthropics/claude-code-action@v1
+        continue-on-error: true   # advice only: a model hiccup must not turn the PR red
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --max-turns 40
+            --allowedTools "Read,Glob,Grep,Write"
+          prompt: ${{ steps.rubric.outputs.text }}
+      - name: Post the review with inline comments and suggested fixes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: python -m tools.post_feedback --repo "$REPO" --pr "$PR"
+      - name: Remove the re-run label
+        if: github.event.action == 'labeled'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR" --remove-label agent-feedback || true
