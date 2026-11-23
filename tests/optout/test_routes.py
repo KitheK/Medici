@@ -38,8 +38,12 @@ def test_handle_opt_out_is_idempotent(db_conn, suppression_key):
 
 
 def test_opt_out_flow_never_logs_identifier(caplog, db_conn, suppression_key):
-    body = json.dumps({"identifier": IDENTIFIER}).encode()
-    with caplog.at_level(logging.DEBUG, logger="medici"):
+    mixed = "MAILTO:Route.Pat@Example.TEST"
+    body = json.dumps({"identifier": mixed}).encode()
+    with caplog.at_level(logging.DEBUG):
         handle_opt_out(db_conn, parse_opt_out_body(body), key=suppression_key)
-        opt_out(db_conn, IDENTIFIER, key=suppression_key)
-    assert IDENTIFIER not in caplog.text
+        opt_out(db_conn, mixed, key=suppression_key)
+    lowered = caplog.text.lower()
+    assert IDENTIFIER not in lowered
+    assert "route.pat" not in lowered
+    assert mixed not in caplog.text

@@ -586,7 +586,7 @@
       ],
       "status": "done",
       "passes": true,
-      "notes": ""
+      "notes": "Review follow-up: canonicalize_identifier (mailto/case/trailing slash) before HMAC. Saved rows deleted on opt_out via excerpt email match until contacts.identifier lands in E6-1; name match when identifier has no @."
     },
     {
       "id": "E4-1",
