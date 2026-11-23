@@ -1,0 +1,8 @@
+---
+description: Medici project rules for Cursor
+alwaysApply: true
+---
+
+Follow `AGENTS.md` at the repo root; it is the single source of truth for commands and rules.
+Run `bash init.sh` first, work one issue per session, and finish with
+`python3 tools/issue_map.py complete <ID>`. Never set `passes` by hand.

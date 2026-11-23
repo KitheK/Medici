@@ -1,0 +1,10 @@
+---
+description: Rules for the review screen and mind map (Cursor-owned issues E5-5, E7-2, E7-3, E8-2)
+globs: ["web/**"]
+alwaysApply: false
+---
+
+- There is no send, connect or message button anywhere in the UI. Copy buttons only.
+- Every contact card shows its source link and a confidence label.
+- Email guesses are labelled "unverified" wherever they appear.
+- Render data from the API payload only; do not fetch third-party pages from the browser.
