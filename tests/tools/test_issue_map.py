@@ -163,3 +163,22 @@ def test_sync_body_links_dependencies_and_marks_commands():
     assert "medici-issue-id: E2-3" in body
     assert "owner:claude-code" in sg.labels_of(index["E2-3"])
     assert "human:decision" not in sg.labels_of(index["E0-1"])
+
+
+def test_sync_keeps_hand_added_queue_labels_and_drops_them_when_done():
+    from tools import sync_github as sg
+
+    index = im.by_id(im.load(im.DEFAULT_MAP))
+    todo = {**index["E2-3"], "status": "todo", "passes": False}
+    done = {**index["E2-3"], "status": "done", "passes": True}
+    assert "agent-night" in sg.merged_labels(todo, ["agent-night", "bug"])
+    assert "bug" not in sg.merged_labels(todo, ["agent-night", "bug"])  # only known manual labels
+    assert not {"agent-queue", "agent-night"} & set(sg.merged_labels(done, ["agent-queue"]))
+    assert "needs-human" in sg.merged_labels(done, ["needs-human"])
+
+
+def test_queue_labels_exist_in_labels_json():
+    import json
+
+    names = {x["name"] for x in json.loads((im.ROOT / ".github/labels.json").read_text())}
+    assert {"agent", "agent-queue", "agent-night"} <= names

@@ -100,3 +100,13 @@ def test_hygiene_accepts_dependency_bot_branches_without_an_issue_link():
     assert "dependabot" in hygiene
     # the "Closes #n" rule only applies to branches that name an issue
     assert "contains(github.head_ref, 'issue')" in hygiene
+
+
+def test_scheduled_runs_use_the_night_label_and_other_runs_the_queue_label():
+    for name in ("build-claude.yml", "build-cursor.yml"):
+        text = (WF / name).read_text()
+        assert "'agent-night' || 'agent-queue'" in text
+        assert "github.event.label.name == 'agent-queue'" in text
+    action = yaml.safe_load((ROOT / ".github/actions/pick-issue/action.yml").read_text())
+    assert action["inputs"]["label"]["required"] is True
+    assert "--only" in (ROOT / ".github/actions/pick-issue/action.yml").read_text()

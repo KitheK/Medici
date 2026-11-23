@@ -8,6 +8,9 @@ inputs:
     description: Optional issue ID to force (label-triggered runs)
     required: false
     default: ""
+  label:
+    description: Opt-in label the issue must carry, agent-queue (on demand) or agent-night (scheduled run)
+    required: true
   github-token:
     required: true
 outputs:
@@ -26,12 +29,16 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
         OWNER: ${{ inputs.owner }}
         FORCE: ${{ inputs.issue }}
+        LABEL: ${{ inputs.label }}
       run: |
         set -euo pipefail
         # IDs that already have an open PR, whichever builder opened it.
         busy=$(gh pr list --state open --limit 100 --json headRefName --jq '.[].headRefName' \
           | grep -oE '[HE][0-9]+-[0-9]+' | sort -u | paste -sd, - || true)
-        args=(--owner "$OWNER" --busy "$busy")
+        # Only issues a person labelled for this kind of run are in the queue.
+        only=$(gh issue list --state open --label "$LABEL" --limit 200 --json title --jq '.[].title' \
+          | grep -oE '^\[[HE][0-9]+-[0-9]+\]' | tr -d '[]' | paste -sd, - || true)
+        args=(--owner "$OWNER" --busy "$busy" --only "$only")
         [ -n "$FORCE" ] && args+=(--issue "$FORCE")
         if id=$(python3 -m tools.queue pick "${args[@]}"); then
           number=$(gh issue list --state open --limit 200 --json number,title \

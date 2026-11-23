@@ -2,6 +2,8 @@
 # different issues (the queue gives each builder only its own issues).
 # Needs: secrets CLAUDE_CODE_OAUTH_TOKEN and GH_PAT; the Claude GitHub App installed;
 # variable ENABLE_AGENTS=true (and ENABLE_NIGHTLY=true for the scheduled run).
+# Queue labels: `agent-queue` = work on it now (label event or manual run);
+# `agent-night` = only the scheduled run below picks it up.
 name: build-claude
 
 on:
@@ -30,7 +32,7 @@ jobs:
     if: >-
       vars.ENABLE_AGENTS == 'true' &&
       (github.event_name != 'schedule' || vars.ENABLE_NIGHTLY == 'true') &&
-      (github.event_name != 'issues' || github.event.label.name == 'claude-now')
+      (github.event_name != 'issues' || github.event.label.name == 'agent-queue')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -56,6 +58,7 @@ jobs:
         with:
           owner: claude-code
           issue: ${{ steps.forced.outputs.id }}
+          label: ${{ github.event_name == 'schedule' && 'agent-night' || 'agent-queue' }}
           github-token: ${{ secrets.GH_PAT }}
       - name: Git identity
         if: steps.pick.outputs.id != ''

@@ -52,13 +52,23 @@ Leave `ENABLE_AGENTS` unset until the smoke test below passes; with it unset, `r
   with your PAT and you cannot approve your own PR. The two checks plus your merge click are the gate.
 - Labels and issues: `python3 -m tools.sync_github` (also runs on merge to `setup/phase-0`).
 
-## Queue behaviour
+## Queue behaviour and labels
 
-`python -m tools.queue pick --owner claude-code|cursor` returns the first issue that is `todo`, owned by
-that lane, with every dependency done **and passing**, and not already in an open PR. Each lane holds at
-most one issue at a time. Human issues (E0, E1, E8-3) never enter an agent lane; until E0-1, E1-1 and
-E1-2 are done the agent queue is empty by design. Run on demand with the `claude-now` or `cursor-now`
-label on an issue, or `workflow_dispatch`.
+Three labels control the agents. Nothing is built until a person labels it.
+
+| Label | Meaning | When agents work on it |
+|---|---|---|
+| `agent` | owned by an agent, not a person (set automatically from `issue_map.json`) | n/a |
+| `agent-queue` | in the agent queue | right away: adding the label starts the owning builder on that issue, or run `build-claude` / `build-cursor` by hand |
+| `agent-night` | queued for the night run | only the scheduled run (about 2:17 AM and 2:47 AM Pacific, set by `cron` in `build-claude.yml` and `build-cursor.yml`; also needs `ENABLE_NIGHTLY=true`) |
+
+`python -m tools.queue pick --owner claude-code|cursor --only <labelled IDs>` returns the first labelled
+issue that is `todo`, owned by that lane, with every dependency done **and passing**, and not already in
+an open PR. Each lane holds at most one issue at a time, and the two lanes run in parallel. Human issues
+(E0, E1, E8-3) never enter an agent lane; until E0-1, E1-1 and E1-2 are done, labelling a product issue
+does nothing. Sync keeps hand-added `agent-queue`, `agent-night`, `needs-human` and `blocked` labels, and
+removes the two queue labels once an issue passes. To change the night time, edit the two `cron` lines
+(they are UTC).
 
 ## Smoke test (first time)
 

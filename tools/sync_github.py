@@ -38,6 +38,17 @@ def labels_of(issue: dict) -> list[str]:
                    f"status:{issue['status']}", *issue["labels"]} - {"human:decision"})
 
 
+# Labels a person sets by hand. Sync keeps them, and drops the queue labels once an issue is done.
+MANUAL_LABELS = {"agent-queue", "agent-night", "needs-human", "blocked"}
+QUEUE_LABELS = {"agent-queue", "agent-night"}
+
+
+def merged_labels(issue: dict, existing: list[str]) -> list[str]:
+    done = issue["status"] == "done" and issue["passes"]
+    keep = {n for n in existing if n in MANUAL_LABELS and not (done and n in QUEUE_LABELS)}
+    return sorted({*labels_of(issue), *keep})
+
+
 def guides_of(issue: dict) -> list[str]:
     return [p[:-3] + "/AGENTS.md" for p in issue["files_allowed"]
             if p.endswith("/**") and p.startswith(GUIDED_ROOTS)]
@@ -155,7 +166,10 @@ def sync(repo: str, dry: bool) -> None:
         done = issue["status"] == "done" and issue["passes"]
         gh.call("PATCH", f"issues/{numbers[issue['id']]}", {
             "title": title_of(issue), "body": render_body(issue, index, numbers),
-            "labels": labels_of(issue), "assignees": [ASSIGNEE],
+            "labels": merged_labels(
+                issue, [label["name"] for label in existing[issue["id"]].get("labels", [])]
+            ),
+            "assignees": [ASSIGNEE],
             "milestone": milestones[f"{issue['epic']} {EPICS[issue['epic']]}"],
             "state": "closed" if done else "open",
             **({"state_reason": "completed"} if done else {}),
