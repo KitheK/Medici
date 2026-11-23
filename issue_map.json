@@ -666,7 +666,7 @@
       ],
       "status": "done",
       "passes": true,
-      "notes": "Owner skipped unfinished E0-1 gate for this session. E2-1 (model client) not required here\u2014schema/validator are pure Python with dict round-trips for E5-2. Resume JSON shape: education, experience, skills, optional projects; dates split on --/\u2013/-/to."
+      "notes": "Owner skipped unfinished E0-1 gate for this session. E2-1 (model client) not required here\u2014schema/validator are pure Python with dict round-trips for E5-2. Resume JSON shape: education, experience, skills, optional projects; dates split on --/\u2013/-/\\bto\\b. Validator is per-entry (dates/titles/degrees/project tools) and scans bullets for tools/numbers absent from user facts."
     },
     {
       "id": "E5-2",
