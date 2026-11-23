@@ -9,6 +9,21 @@ _SCRIPT_STYLE = re.compile(
     r"<(script|style)\b[^>]*>.*?</\1>",
     re.IGNORECASE | re.DOTALL,
 )
+_VOID_ELEMENTS = frozenset({
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "source",
+    "track",
+    "wbr",
+})
 
 
 def _is_hidden(attrs: list[tuple[str, str | None]]) -> bool:
@@ -29,6 +44,10 @@ class _ToMarkdown(HTMLParser):
         self._skip: set[str] = set()
         self._parts: list[str] = []
 
+    def _push_stack(self, tag: str, hidden: bool) -> None:
+        if tag not in _VOID_ELEMENTS:
+            self._tag_stack.append(hidden)
+
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         t = tag.lower()
         if t in {"script", "style", "noscript"}:
@@ -38,15 +57,15 @@ class _ToMarkdown(HTMLParser):
         if self._skip:
             return
         if self._hidden_depth:
-            self._tag_stack.append(hidden)
+            self._push_stack(t, hidden)
             if hidden:
                 self._hidden_depth += 1
             return
         if hidden:
             self._hidden_depth += 1
-            self._tag_stack.append(True)
+            self._push_stack(t, True)
             return
-        self._tag_stack.append(False)
+        self._push_stack(t, False)
         if t in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             level = int(t[1])
             self._parts.append("\n" + "#" * level + " ")
@@ -65,6 +84,8 @@ class _ToMarkdown(HTMLParser):
         t = tag.lower()
         if t in self._skip:
             self._skip.discard(t)
+            return
+        if t in _VOID_ELEMENTS:
             return
         if self._hidden_depth:
             was_hidden = self._tag_stack.pop() if self._tag_stack else False
