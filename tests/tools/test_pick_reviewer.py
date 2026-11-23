@@ -37,9 +37,9 @@ def test_naming_an_agent_in_prose_is_not_a_marker():
 @pytest.mark.parametrize(
     ("made", "reviewer"),
     [
-        (commit("cursoragent", "KitheK"), "claude"),
+        (commit("cursoragent", "human-author"), "claude"),
         (commit("claude"), "cursor"),
-        (commit("KitheK", "claude"), "cursor"),
+        (commit("human-author", "claude"), "cursor"),
     ],
 )
 def test_commit_authors_decide_when_branch_and_body_do_not(made, reviewer):
@@ -65,7 +65,7 @@ def test_both_body_markers_fall_back_to_commits():
 
 
 @pytest.mark.parametrize(
-    "commits", [[], [commit("KitheK")], [commit("claude"), commit("cursoragent")]]
+    "commits", [[], [commit("human-author")], [commit("claude"), commit("cursoragent")]]
 )
 def test_human_or_evenly_mixed_pr_has_no_agent_author_and_gets_the_default_reviewer(commits):
     assert pr.author(pull(commits=commits)) is None
