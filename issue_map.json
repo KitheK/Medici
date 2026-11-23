@@ -709,7 +709,8 @@
       "files_allowed": [
         "src/medici/resume/render/**",
         "tests/resume/**",
-        "templates/**"
+        "templates/**",
+        ".github/workflows/ci.yml"
       ],
       "acceptance": [
         "$ pytest tests/resume -q",
@@ -717,7 +718,7 @@
       ],
       "status": "done",
       "passes": true,
-      "notes": "Stacked on issue/E5-1 (PR #54). Owner skipped human gates. No resume heading/contact until a later issue adds fields to ResumeDocument. Blocker: stacked-PR files_allowed in CI may need a separate tooling issue (not E5-3 scope)."
+      "notes": "Stacked on issue/E5-1 (PR #54). Owner skipped human gates. No resume heading/contact until a later issue adds fields to ResumeDocument. CI scope: stacked PRs set github.base_ref to setup/phase-0; scope job uses pull_request.base.ref (one-line ci.yml, see PR discussion)."
     },
     {
       "id": "E5-4",
