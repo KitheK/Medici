@@ -339,9 +339,9 @@
         "$ pytest tests/model -q",
         "Returns schema-valid JSON from Haiku 5.5 and from a local model; bad output retried once, then raises"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "Built while E1-2 gate is open per owner. Anthropic uses GA output_config.format json_schema (structured-outputs doc); local gateway POST /v1/complete with {prompt, schema} -> message.content. Callers still wrap untrusted text in <untrusted_data> (centralize in a later issue if wanted)."
     },
     {
       "id": "E2-2",
@@ -349,6 +349,7 @@
       "epic": "E2",
       "depends_on": [
         "E2-1",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],

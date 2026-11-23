@@ -37,3 +37,11 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
   `workflow_dispatch`, and re-review context via `prior-review-comments.md`.
 - New labels in `.github/labels.json`; documented in `AGENTS.md`, `docs/github-setup.md`, PR template.
 - PRs #52/#54 skipped reviewers because `ENABLE_AGENTS` is not `true` (not a workflow bug).
+
+## 2026-11-23: E2-1 Model client
+
+- Added `ModelClient` protocol, in-tree JSON Schema checks, one-retry helper, Anthropic Haiku
+  5.5 client (`output_format` json_schema), local gateway client (`MEDICI_LOCAL_MODEL_URL`), and
+  `FakeModelClient`. Seventeen tests; all mocked HTTP, no live model.
+- Assumed API shapes because E1-2 / data-map gates are still open; see issue `notes` and PR.
+- Next: E2-2 posting parser (depends on E2-1).
