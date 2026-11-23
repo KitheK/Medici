@@ -692,8 +692,8 @@
         "$ pytest tests/resume -q",
         "Schema-valid JSON on 10 sample fact sets; an injected posting leaves output unchanged"
       ],
-      "status": "review",
-      "passes": false,
+      "status": "done",
+      "passes": true,
       "notes": "Owner skipped open human gates. Tests use FakeModelClient only; generate_resume re-validates with E5-1 validator and retries once on ValidationError."
     },
     {
