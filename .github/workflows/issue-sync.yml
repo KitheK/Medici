@@ -1,0 +1,23 @@
+name: issue-sync
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [issue_map.json, .github/labels.json, tools/sync_github.py]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Sync labels, milestones and issues from issue_map.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python -m tools.sync_github --repo "${{ github.repository }}"

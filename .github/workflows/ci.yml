@@ -1,0 +1,25 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: make install
+      - name: Lint, tests, privacy tests, issue-map validation
+        run: make ci
+      - name: files_allowed diff check
+        if: github.event_name == 'pull_request'
+        run: python -m tools.check_files_allowed origin/${{ github.base_ref }}

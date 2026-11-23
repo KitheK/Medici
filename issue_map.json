@@ -1,0 +1,961 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "id": "H0-1",
+      "title": "Repository, CI and test skeleton",
+      "epic": "H0",
+      "depends_on": [],
+      "owner": "claude-code",
+      "labels": [
+        "size:S"
+      ],
+      "files_allowed": [
+        "pyproject.toml",
+        "Makefile",
+        ".github/**",
+        ".gitignore",
+        "src/medici/__init__.py",
+        "tests/test_smoke.py",
+        "tests/privacy/**",
+        "README.md"
+      ],
+      "acceptance": [
+        "$ make ci",
+        "make ci runs lint, tests and a placeholder privacy test on a clean clone"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "H0-2",
+      "title": "Agent context files and progress log",
+      "epic": "H0",
+      "depends_on": [
+        "H0-1"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:S"
+      ],
+      "files_allowed": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".cursor/**",
+        "init.sh",
+        "progress.md",
+        "docs/**"
+      ],
+      "acceptance": [
+        "$ bash init.sh",
+        "AGENTS.md lists commands and rules, CLAUDE.md imports it, init.sh passes, the progress file exists"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "H0-3",
+      "title": "Issue-map tooling",
+      "epic": "H0",
+      "depends_on": [
+        "H0-1"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:S"
+      ],
+      "files_allowed": [
+        "tools/**",
+        "tests/tools/**",
+        "issue_map.json"
+      ],
+      "acceptance": [
+        "$ pytest tests/tools -q",
+        "Picker returns the right next issue on a test map; validator rejects cycles and duplicate IDs; completion script refuses passes when tests fail"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "H0-4",
+      "title": "Synthetic fixture sites",
+      "epic": "H0",
+      "depends_on": [
+        "H0-1"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:S",
+        "safety:privacy"
+      ],
+      "files_allowed": [
+        "fixtures/**",
+        "tests/fixtures/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/fixtures -q",
+        "Local site serves team, careers, about and blog pages, a robots.txt that blocks one path, and a page with injected instructions; every name is invented"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "E0-1",
+      "title": "Purpose, data map, retention and saved-network rules",
+      "epic": "E0",
+      "depends_on": [],
+      "owner": "human",
+      "labels": [
+        "human:decision"
+      ],
+      "files_allowed": [],
+      "acceptance": [
+        "One-page data map reviewed by a second person"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E0-2",
+      "title": "Privacy notice draft and legal read",
+      "epic": "E0",
+      "depends_on": [
+        "E0-1"
+      ],
+      "owner": "human",
+      "labels": [
+        "human:decision"
+      ],
+      "files_allowed": [],
+      "acceptance": [
+        "Draft notice written; a qualified reader has seen the retention design"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E1-1",
+      "title": "Collect and hand-label 30 postings",
+      "epic": "E1",
+      "depends_on": [
+        "E0-1"
+      ],
+      "owner": "human",
+      "labels": [
+        "human:decision"
+      ],
+      "files_allowed": [],
+      "acceptance": [
+        "golden_set.json holds each posting's public-page evidence"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E1-2",
+      "title": "Gate decision on hit rate",
+      "epic": "E1",
+      "depends_on": [
+        "E1-1"
+      ],
+      "owner": "human",
+      "labels": [
+        "human:decision"
+      ],
+      "files_allowed": [],
+      "acceptance": [
+        "Hit rate by company size recorded and a go-or-narrow decision written"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E2-1",
+      "title": "Model client",
+      "epic": "E2",
+      "depends_on": [
+        "H0-1",
+        "E1-2",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/model/**",
+        "tests/model/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/model -q",
+        "Returns schema-valid JSON from Haiku 5.5 and from a local model; bad output retried once, then raises"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E2-2",
+      "title": "Posting parser",
+      "epic": "E2",
+      "depends_on": [
+        "E2-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/posting/**",
+        "tests/posting/**",
+        "fixtures/postings/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/posting -q",
+        "Extracts company, domain, title, team text and named contact on 10 fixture postings"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E2-3",
+      "title": "Fetch wrapper",
+      "epic": "E2",
+      "depends_on": [
+        "H0-4",
+        "E1-2",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/fetch/**",
+        "tests/fetch/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/fetch -q",
+        "Skips robots-blocked paths, rejects off-allowlist URLs, limits to 1 request per second per host, converts HTML to Markdown"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E2-4",
+      "title": "Contact extractor and excerpt validator",
+      "epic": "E2",
+      "depends_on": [
+        "E2-1",
+        "E2-3",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/contacts/**",
+        "tests/contacts/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/contacts -q",
+        "Returns contacts with excerpts; rejects a planted name absent from the page text"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E2-5",
+      "title": "Storage, expiry job and suppression table",
+      "epic": "E2",
+      "depends_on": [
+        "H0-1",
+        "E0-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/store/**",
+        "tests/store/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/store -q",
+        "Contacts carry expires_at; the job deletes expired rows; suppression stores an HMAC"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E2-6",
+      "title": "Command-line review card",
+      "epic": "E2",
+      "depends_on": [
+        "E2-2",
+        "E2-4",
+        "E2-5",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:S"
+      ],
+      "files_allowed": [
+        "src/medici/cli/**",
+        "tests/cli/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/cli -q",
+        "One command prints a card with a source link for a fixture posting"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E3-1",
+      "title": "Multi-page crawl with allowlist and cap",
+      "epic": "E3",
+      "depends_on": [
+        "E2-3",
+        "E2-4",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/crawl/**",
+        "tests/crawl/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/crawl -q",
+        "Follows allowlisted paths up to 10 pages per job, then stops"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E3-2",
+      "title": "Scoring rule, three-person cap and role labels",
+      "epic": "E3",
+      "depends_on": [
+        "E3-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/scoring/**",
+        "tests/scoring/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/scoring -q",
+        "At most 1 recruiter and 2 team members; cap test passes on a page with 10 contacts"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E3-3",
+      "title": "Injection and log-hygiene tests",
+      "epic": "E3",
+      "depends_on": [
+        "E3-2",
+        "H0-4",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "tests/privacy/**",
+        "src/medici/logging/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/privacy -q",
+        "Injected page changes no fetches or output; log scan finds no names or emails"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E3-4",
+      "title": "Opt-out endpoint and suppression flow",
+      "epic": "E3",
+      "depends_on": [
+        "E2-5",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/optout/**",
+        "tests/optout/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/optout -q",
+        "A suppressed person never appears in output"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E4-1",
+      "title": "Email evidence and format inference",
+      "epic": "E4",
+      "depends_on": [
+        "E3-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/email/**",
+        "tests/email/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/email -q",
+        "Format inferred only from company-published addresses; fewer than two agreeing examples returns \"no guess\""
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E4-2",
+      "title": "MX lookup, labels and \\\"no guess\\\"",
+      "epic": "E4",
+      "depends_on": [
+        "E4-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:S"
+      ],
+      "files_allowed": [
+        "src/medici/email/**",
+        "tests/email/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/email -q",
+        "DNS MX result attached; every guess labelled \"unverified\""
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E5-1",
+      "title": "Resume schema and validator",
+      "epic": "E5",
+      "depends_on": [
+        "E0-1",
+        "E2-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/resume/schema/**",
+        "tests/resume/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/resume -q",
+        "Validator rejects any employer, school, date or tool not in the user's facts"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E5-2",
+      "title": "Resume prompt and model call",
+      "epic": "E5",
+      "depends_on": [
+        "E5-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/resume/prompt/**",
+        "tests/resume/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/resume -q",
+        "Schema-valid JSON on 10 sample fact sets; an injected posting leaves output unchanged"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E5-3",
+      "title": "LaTeX renderer",
+      "epic": "E5",
+      "depends_on": [
+        "E5-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/resume/render/**",
+        "tests/resume/**",
+        "templates/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/resume -q",
+        "Fills Jake's template macros and escapes & % $ # _ { } ~ ^ \\\\"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E5-4",
+      "title": "Sandboxed compile",
+      "epic": "E5",
+      "depends_on": [
+        "E5-3",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:sandbox",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/resume/compile/**",
+        "tests/resume/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/resume -q",
+        "No network, no shell escape, time limit; a one-page PDF on 20 inputs"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E5-5",
+      "title": "Approval screen for changed bullets",
+      "epic": "E5",
+      "depends_on": [
+        "E5-2",
+        "E5-4",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "cursor",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "web/src/resume/**",
+        "web/tests/resume/**",
+        "web/package.json",
+        "web/package-lock.json",
+        "web/tsconfig.json",
+        "web/*.config.*",
+        "web/AGENTS.md"
+      ],
+      "acceptance": [
+        "$ npm test --prefix web",
+        "Changed bullets shown side by side; user accepts or rejects each"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E6-1",
+      "title": "Saved contacts: save, delete, export",
+      "epic": "E6",
+      "depends_on": [
+        "E3-2",
+        "E3-4",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/network/**",
+        "tests/network/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/network -q",
+        "Nothing saves without a click; delete and export work"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E6-2",
+      "title": "Re-verify, staleness and 180-day cleanup",
+      "epic": "E6",
+      "depends_on": [
+        "E6-1",
+        "E2-3",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/network/**",
+        "tests/network/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/network -q",
+        "Removing a fixture page marks the entry stale; entries 180 days past last verification are deleted"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E6-3",
+      "title": "Isolation and suppression-cascade tests",
+      "epic": "E6",
+      "depends_on": [
+        "E6-2",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:M"
+      ],
+      "files_allowed": [
+        "tests/network/**",
+        "tests/privacy/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/network tests/privacy -q",
+        "User B never sees user A's saved contact; a suppression hit clears both lists"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E7-1",
+      "title": "API endpoints",
+      "epic": "E7",
+      "depends_on": [
+        "E3-2",
+        "E4-2",
+        "E5-5",
+        "E6-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/api/**",
+        "tests/api/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/api -q",
+        "Review payload contract tests pass"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E7-2",
+      "title": "Review screen and source panel",
+      "epic": "E7",
+      "depends_on": [
+        "E7-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "cursor",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "web/src/review/**",
+        "web/tests/review/**",
+        "web/package.json",
+        "web/package-lock.json",
+        "web/tsconfig.json",
+        "web/*.config.*",
+        "web/AGENTS.md"
+      ],
+      "acceptance": [
+        "$ npm test --prefix web",
+        "Each contact shows source and confidence; no send button exists"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E7-3",
+      "title": "Mind map, copy buttons and message helper",
+      "epic": "E7",
+      "depends_on": [
+        "E7-2",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "cursor",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "web/src/map/**",
+        "web/tests/map/**",
+        "web/package.json",
+        "web/package-lock.json",
+        "web/tsconfig.json",
+        "web/*.config.*",
+        "web/AGENTS.md"
+      ],
+      "acceptance": [
+        "$ npm test --prefix web",
+        "Graph of you, company, recruiter and team renders from the payload"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E8-1",
+      "title": "Security review and Postgres move",
+      "epic": "E8",
+      "depends_on": [
+        "E7-2",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "safety:privacy",
+        "size:L"
+      ],
+      "files_allowed": [
+        "src/medici/store/**",
+        "migrations/**",
+        "tests/security/**",
+        "docs/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/security -q",
+        "Secrets in a vault, encryption on, migration passes"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E8-2",
+      "title": "Privacy notice and opt-out page live",
+      "epic": "E8",
+      "depends_on": [
+        "E3-4",
+        "E7-2",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "cursor",
+      "labels": [
+        "safety:privacy",
+        "size:S"
+      ],
+      "files_allowed": [
+        "web/src/legal/**",
+        "web/tests/legal/**",
+        "docs/**",
+        "web/package.json",
+        "web/package-lock.json",
+        "web/tsconfig.json",
+        "web/*.config.*",
+        "web/AGENTS.md"
+      ],
+      "acceptance": [
+        "$ npm test --prefix web",
+        "Both linked from the review screen"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E8-3",
+      "title": "Final legal review and launch check",
+      "epic": "E8",
+      "depends_on": [
+        "E8-1",
+        "E8-2",
+        "E6-3",
+        "E3-3",
+        "E7-3"
+      ],
+      "owner": "human",
+      "labels": [
+        "human:decision"
+      ],
+      "files_allowed": [],
+      "acceptance": [
+        "Review done; every privacy test passes; backups follow retention"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E9-1",
+      "title": "Batch runner with per-host limits and budget cap",
+      "epic": "E9",
+      "depends_on": [
+        "E3-3",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/batch/**",
+        "tests/batch/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/batch -q",
+        "100 fixture postings processed at 1 request per second per host; stops at the cap"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E9-2",
+      "title": "Agent wrapper with human pause",
+      "epic": "E9",
+      "depends_on": [
+        "E9-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "src/medici/agent/**",
+        "tests/agent/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/agent -q",
+        "Pipeline stages run as tools; pauses for approval before any save"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "E9-3",
+      "title": "Run report",
+      "epic": "E9",
+      "depends_on": [
+        "E9-1",
+        "H0-2",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:S"
+      ],
+      "files_allowed": [
+        "src/medici/batch/report/**",
+        "tests/batch/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/batch -q",
+        "Tokens, cost and failures shown per batch"
+      ],
+      "status": "todo",
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

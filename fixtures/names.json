@@ -1,0 +1,10 @@
+{
+  "note": "Every person, company and domain in fixtures/site is invented. Add new names here first.",
+  "people": [
+    "Marisol Quenby", "Tobias Wrenfield", "Ines Calderbrook", "Dov Harkness", "Pilar Oakhaven",
+    "Emeka Straithe", "Linnea Voss-Tarrant", "Hollis Brandt-Maple", "Saskia Penhallow",
+    "Orrin Dacosta-Finch", "Rowan Blockwell", "Vesper Nightingale"
+  ],
+  "company": "Brightloom Robotics",
+  "allowed_email_domains": ["brightloom.example.test", "example.invalid"]
+}
