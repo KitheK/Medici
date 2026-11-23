@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import os
-import urllib.error
-import urllib.request
 from collections.abc import Callable
 from typing import Any
 
 from medici.model.client import SYSTEM_PROMPT, ModelError, request_json_with_retry
+from medici.model.http import default_post_json
 
 logger = logging.getLogger(__name__)
 
@@ -19,17 +17,8 @@ DEFAULT_LOCAL_URL = "http://127.0.0.1:8766/v1/complete"
 PostJson = Callable[[str, dict[str, str], dict[str, Any]], dict[str, Any]]
 
 
-def _default_post_json(url: str, headers: dict[str, str], body: dict[str, Any]) -> dict[str, Any]:
-    payload = json.dumps(body).encode()
-    request = urllib.request.Request(url, data=payload, headers=headers, method="POST")
-    try:
-        with urllib.request.urlopen(request, timeout=120) as response:
-            return json.loads(response.read().decode())
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode(errors="replace")
-        raise ModelError(f"local model HTTP {exc.code}: {detail}") from exc
-    except urllib.error.URLError as exc:
-        raise ModelError(f"local model request failed: {exc.reason}") from exc
+def _local_post_json(url: str, headers: dict[str, str], body: dict[str, Any]) -> dict[str, Any]:
+    return default_post_json(url, headers, body, provider="local model")
 
 
 class LocalModelClient:
@@ -42,7 +31,7 @@ class LocalModelClient:
         post_json: PostJson | None = None,
     ) -> None:
         self._url = (base_url or DEFAULT_LOCAL_URL).rstrip("/")
-        self._post_json = post_json or _default_post_json
+        self._post_json = post_json or _local_post_json
 
     @classmethod
     def from_env(cls) -> LocalModelClient:
