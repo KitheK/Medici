@@ -1,0 +1,4 @@
+Data Pipeline Engineer
+Cobalt Finch Labs | jobs.cobaltfinch.example.test
+
+Ingest team building batch ETL in Python. We do not list a single recruiting contact on this page.

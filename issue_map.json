@@ -366,9 +366,9 @@
         "$ pytest tests/posting -q",
         "Extracts company, domain, title, team text and named contact on 10 fixture postings"
       ],
-      "status": "in_progress",
-      "passes": false,
-      "notes": "Claimed by Cursor for week of 2026-11-22"
+      "status": "done",
+      "passes": true,
+      "notes": "Claimed by Cursor for week of 2026-11-22. Owner skipped human gates E0-1/E1-1; postings are synthetic fixtures (not E1-1 golden set). Tests use FakeModelClient only—no live model."
     },
     {
       "id": "E2-3",

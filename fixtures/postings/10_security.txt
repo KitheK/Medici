@@ -1,0 +1,4 @@
+Application Security Engineer
+Northwind Cipher | northwindcipher.example.invalid
+
+Red-team collaboration with Orrin Dacosta-Finch. Hiring coordinator: Rowan Blockwell.

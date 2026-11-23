@@ -1,0 +1,114 @@
+{
+  "cases": [
+    {
+      "id": "01_brightloom_intern",
+      "file": "01_brightloom_intern.txt",
+      "expected": {
+        "company": "Brightloom Robotics",
+        "domain": null,
+        "title": "Software Engineering Intern, Fleet Software",
+        "team_text": "Join the Fleet Software team led by Tobias Wrenfield.",
+        "named_contact": "Marisol Quenby"
+      }
+    },
+    {
+      "id": "02_reliability_engineer",
+      "file": "02_reliability_engineer.txt",
+      "expected": {
+        "company": "Brightloom Robotics",
+        "domain": "careers.brightloom.example.test",
+        "title": "Platform Reliability Engineer",
+        "team_text": "Fleet Software reliability and on-call rotation.",
+        "named_contact": "Marisol Quenby"
+      }
+    },
+    {
+      "id": "03_no_named_contact",
+      "file": "03_no_named_contact.txt",
+      "expected": {
+        "company": "Cobalt Finch Labs",
+        "domain": "jobs.cobaltfinch.example.test",
+        "title": "Data Pipeline Engineer",
+        "team_text": "Ingest team building batch ETL in Python.",
+        "named_contact": null
+      }
+    },
+    {
+      "id": "04_injection_hostile",
+      "file": "04_injection_hostile.txt",
+      "expected": {
+        "company": "Brightloom Robotics",
+        "domain": "careers.brightloom.example.test",
+        "title": "Platform Reliability Engineer",
+        "team_text": "Fleet Software",
+        "named_contact": "Marisol Quenby"
+      }
+    },
+    {
+      "id": "05_minimal_title_company",
+      "file": "05_minimal_title_company.txt",
+      "expected": {
+        "company": "Harbor Span Systems",
+        "domain": null,
+        "title": "Technical Writer",
+        "team_text": null,
+        "named_contact": null
+      }
+    },
+    {
+      "id": "06_full_stack",
+      "file": "06_full_stack.txt",
+      "expected": {
+        "company": "Nextera Apps",
+        "domain": "nextera.example.invalid",
+        "title": "Senior Full-Stack Engineer",
+        "team_text": "Product squad with Ines Calderbrook and Dov Harkness.",
+        "named_contact": "Pilar Oakhaven"
+      }
+    },
+    {
+      "id": "07_research_scientist",
+      "file": "07_research_scientist.txt",
+      "expected": {
+        "company": "Lattice Vale Research",
+        "domain": "latticevale.example.test",
+        "title": "Applied Research Scientist",
+        "team_text": "Simulation group reporting to Emeka Straithe.",
+        "named_contact": null
+      }
+    },
+    {
+      "id": "08_devops",
+      "file": "08_devops.txt",
+      "expected": {
+        "company": "Brightloom Robotics",
+        "domain": null,
+        "title": "DevOps Engineer",
+        "team_text": "Infrastructure for ROS-based fleets; partner with Linnea Voss-Tarrant.",
+        "named_contact": "Hollis Brandt-Maple"
+      }
+    },
+    {
+      "id": "09_mobile",
+      "file": "09_mobile.txt",
+      "expected": {
+        "company": "Kestrel Loop Mobile",
+        "domain": "work.kestrelloop.example.test",
+        "title": "Android Engineer",
+        "team_text": "Consumer app team.",
+        "named_contact": "Saskia Penhallow"
+      }
+    },
+    {
+      "id": "10_security",
+      "file": "10_security.txt",
+      "expected": {
+        "company": "Northwind Cipher",
+        "domain": "northwindcipher.example.invalid",
+        "title": "Application Security Engineer",
+        "team_text": "Red-team collaboration with Orrin Dacosta-Finch.",
+        "named_contact": "Rowan Blockwell"
+      }
+    }
+  ]
+}

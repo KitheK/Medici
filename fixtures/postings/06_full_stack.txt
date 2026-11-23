@@ -1,0 +1,5 @@
+Senior Full-Stack Engineer
+Nextera Apps (nextera.example.invalid)
+
+Product squad with Ines Calderbrook and Dov Harkness. Talent partner: Pilar Oakhaven.
+Stack: TypeScript, Postgres, Kubernetes.
