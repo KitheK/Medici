@@ -44,3 +44,12 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
   both. Branch prefix alone missed Cursor PRs on `issue/*` branches.
 - `review-gate` fails if no reviewer could be designated (it was skipped, which counts as passing).
 - Not yet run on GitHub: open PRs use the new rule only after their base contains this change.
+
+## 2026-11-23: E2-5 storage, expiry and suppression
+
+- Added `src/medici/store/` (SQLite schema, contacts with mandatory `expires_at`, expiry
+  delete job, suppression table with HMAC-only identifiers) and `tests/store/`.
+- Assumed E0-1 retention from root `AGENTS.md` (30-day unsaved, 180-day saved from save time;
+  re-verification refresh deferred to E6-2).
+- Next: E2-2 posting parser, E2-4 contact extractor, then E2-6 CLI review card.
+- Blockers: none (E0-1 human gate deliberately bypassed for this session).
