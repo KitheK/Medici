@@ -615,7 +615,12 @@
       ],
       "files_allowed": [
         "web/src/resume/**",
-        "web/tests/resume/**"
+        "web/tests/resume/**",
+        "web/package.json",
+        "web/package-lock.json",
+        "web/tsconfig.json",
+        "web/*.config.*",
+        "web/AGENTS.md"
       ],
       "acceptance": [
         "$ npm test --prefix web",
@@ -748,7 +753,12 @@
       ],
       "files_allowed": [
         "web/src/review/**",
-        "web/tests/review/**"
+        "web/tests/review/**",
+        "web/package.json",
+        "web/package-lock.json",
+        "web/tsconfig.json",
+        "web/*.config.*",
+        "web/AGENTS.md"
       ],
       "acceptance": [
         "$ npm test --prefix web",
@@ -773,7 +783,12 @@
       ],
       "files_allowed": [
         "web/src/map/**",
-        "web/tests/map/**"
+        "web/tests/map/**",
+        "web/package.json",
+        "web/package-lock.json",
+        "web/tsconfig.json",
+        "web/*.config.*",
+        "web/AGENTS.md"
       ],
       "acceptance": [
         "$ npm test --prefix web",
@@ -829,7 +844,12 @@
       "files_allowed": [
         "web/src/legal/**",
         "web/tests/legal/**",
-        "docs/**"
+        "docs/**",
+        "web/package.json",
+        "web/package-lock.json",
+        "web/tsconfig.json",
+        "web/*.config.*",
+        "web/AGENTS.md"
       ],
       "acceptance": [
         "$ npm test --prefix web",

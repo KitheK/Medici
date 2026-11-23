@@ -1,0 +1,14 @@
+name: Human decision or review
+description: A decision, data collection or review that only a person can do
+title: "[ID] Title"
+labels: ["human"]
+assignees: ["KitheK"]
+body:
+  - type: textarea
+    id: question
+    attributes: {label: Decision or deliverable}
+    validations: {required: true}
+  - type: textarea
+    id: done
+    attributes: {label: Done when}
+    validations: {required: true}

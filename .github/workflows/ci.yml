@@ -4,6 +4,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -15,7 +18,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: make install
-      - run: make ci
+      - name: Lint, tests, privacy tests, issue-map validation
+        run: make ci
       - name: files_allowed diff check
         if: github.event_name == 'pull_request'
-        run: python tools/check_files_allowed.py origin/${{ github.base_ref }}
+        run: python -m tools.check_files_allowed origin/${{ github.base_ref }}
