@@ -6,7 +6,7 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = ["pytest>=8", "ruff>=0.6", "pyyaml>=6"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -14,7 +14,11 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
-markers = ["privacy: privacy and safety tests that must always pass"]
+markers = [
+  "privacy: privacy and safety tests that must always pass",
+  "integration: runs real local components together (fixture site, sqlite, subprocesses)",
+  "e2e: drives a whole workflow from its outer edge",
+]
 
 [tool.ruff]
 line-length = 100

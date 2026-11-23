@@ -14,7 +14,8 @@ Do not confuse the two: code you write calls the model; you are not the model.
 | Task | Command |
 |---|---|
 | Install | `make install` |
-| Everything CI runs | `make ci` (lint, tests, privacy tests, issue-map validation) |
+| Everything CI runs | `make ci` (lint, unit, integration, e2e, privacy, issue-map validation) |
+| One test layer | `make test-unit`, `make test-integration`, `make test-e2e` |
 | Lint only | `python3 -m ruff check .` |
 | Tests only | `python3 -m pytest -q` |
 | Privacy tests only | `make privacy` |
@@ -29,10 +30,13 @@ Do not confuse the two: code you write calls the model; you are not the model.
 
 1. Run `bash init.sh`. If it fails, fix that before anything else.
 2. Run `make next`, or take the issue you were given. Work in its own git worktree and branch named
-   for it, for example `issue/E2-3`.
+   for it: `issue/E2-3` by hand, `claude/issue-E2-3` or `cursor/issue-E2-3` when CI builds it.
+   Claude Code and Cursor work in parallel on different issues (`tools/queue.py` gives each its own);
+   the other builder reviews your PR. Never review your own PR. See `docs/github-setup.md`.
 3. Read the issue in `issue_map.json`. Its `acceptance` list is the definition of done. Lines starting
    with `$ ` are commands that `complete` runs; the rest are checked by a reviewer.
-4. Write the failing test first, then the code.
+4. Write the failing test first, then the code. Mark tests that start the fixture site or a
+   subprocess `@pytest.mark.integration`, and whole-workflow tests `@pytest.mark.e2e`; the rest are unit.
 5. Change only files matching the issue's `files_allowed` (plus `issue_map.json`, `progress.md`).
    CI fails a PR that strays.
 6. Set `status` to `in_progress` when you start and `review` when you open the PR. Add a line to

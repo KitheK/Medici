@@ -1,0 +1,93 @@
+# Claude Code lane. Runs at the same time as build-cursor.yml: different concurrency group,
+# different issues (the queue gives each builder only its own issues).
+# Needs: secrets CLAUDE_CODE_OAUTH_TOKEN and GH_PAT; the Claude GitHub App installed;
+# variable ENABLE_AGENTS=true (and ENABLE_NIGHTLY=true for the scheduled run).
+name: build-claude
+
+on:
+  schedule:
+    - cron: "17 10 * * *"
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue ID to build (blank = next in queue)"
+        required: false
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: build-claude
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      vars.ENABLE_AGENTS == 'true' &&
+      (github.event_name != 'schedule' || vars.ENABLE_NIGHTLY == 'true') &&
+      (github.event_name != 'issues' || github.event.label.name == 'claude-now')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.GH_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}   # PAT so the PR triggers CI and the reviewers
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: make install && make hooks
+      - name: Label-triggered runs name their issue by title
+        id: forced
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          INPUT_ISSUE: ${{ github.event.inputs.issue }}
+        run: |
+          id=$(echo "$TITLE" | grep -oE '^\[[HE][0-9]+-[0-9]+\]' | tr -d '[]' || true)
+          echo "id=${id:-$INPUT_ISSUE}" >> "$GITHUB_OUTPUT"
+      - id: pick
+        uses: ./.github/actions/pick-issue
+        with:
+          owner: claude-code
+          issue: ${{ steps.forced.outputs.id }}
+          github-token: ${{ secrets.GH_PAT }}
+      - name: Git identity
+        if: steps.pick.outputs.id != ''
+        run: |
+          git config user.name "medici-claude[bot]"
+          git config user.email "medici-claude@users.noreply.github.com"
+      - uses: anthropics/claude-code-action@v1
+        if: steps.pick.outputs.id != ''
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --max-turns 60
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(python3:*),Bash(pytest:*),Bash(ruff:*),Bash(make:*),Bash(git:*),Bash(gh pr create:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(ls:*),Bash(cat:*),Bash(mkdir:*)"
+          prompt: |
+            Build issue ${{ steps.pick.outputs.id }} (GitHub issue #${{ steps.pick.outputs.number }}) in ${{ github.repository }}.
+
+            1. Read AGENTS.md, then the issue (`gh issue view ${{ steps.pick.outputs.number }} --comments`),
+               then the AGENTS.md of each folder in its files_allowed, then its entry in issue_map.json.
+            2. If the acceptance criteria are ambiguous, comment on the issue with specific questions,
+               and stop. Do not guess.
+            3. Create branch claude/issue-${{ steps.pick.outputs.id }}. Set its status to in_progress in
+               issue_map.json. Write the failing test first, then the code. Touch only files matching
+               files_allowed (plus issue_map.json and progress.md). Never edit .github/ or tools/.
+            4. Run `make ci` until it passes, then `python3 tools/issue_map.py complete ${{ steps.pick.outputs.id }}`.
+               Never edit `passes` by hand. Never claim a check passed unless you ran it.
+            5. Append a dated entry to progress.md. Commit (the commit hook adds the co-author trailer).
+            6. Push and open a DRAFT pull request. The body starts with
+               "Closes #${{ steps.pick.outputs.number }}", then lists each acceptance criterion and
+               how it was verified. Cursor will review it; do not review your own work.
+            Never push to main and never merge.
+      - name: Fail loudly if no PR was opened
+        if: steps.pick.outputs.id != '' && always()
+        run: |
+          gh pr list --state open --head "claude/issue-${{ steps.pick.outputs.id }}" --json number --jq 'length' | grep -qx '[1-9][0-9]*' \
+            || { echo "::error::Claude finished issue ${{ steps.pick.outputs.id }} without opening a PR"; exit 1; }

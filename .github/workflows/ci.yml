@@ -7,19 +7,69 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  ci:
+  lint-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: make install
+      - run: make lint
+      - run: make test-unit
+      - run: make privacy
+      - run: make validate-map
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: make install
+      - run: make test-integration
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: make install
+      - run: make test-e2e
+      # Playwright joins here when web/package.json exists (first web issue).
+
+  scope:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: make install
-      - name: Lint, tests, privacy tests, issue-map validation
-        run: make ci
-      - name: files_allowed diff check
-        if: github.event_name == 'pull_request'
-        run: python -m tools.check_files_allowed origin/${{ github.base_ref }}
+        with: {python-version: "3.12"}
+      - name: Branch only touches the issue's files_allowed
+        env:
+          BASE: ${{ github.base_ref }}
+        run: python -m tools.check_files_allowed "origin/$BASE"
+
+  # The one required status check: green only if every layer is green.
+  ci:
+    if: always()
+    needs: [lint-unit, integration, e2e, scope]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All layers passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do
+            case "$r" in success|skipped) ;; *) echo "::error::a CI layer did not pass"; exit 1 ;; esac
+          done

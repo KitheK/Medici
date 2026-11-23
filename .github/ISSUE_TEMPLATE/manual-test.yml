@@ -1,0 +1,24 @@
+name: Manual test pass
+description: A person runs docs/manual-testing.md before a release or after a risky change
+title: "[manual] Test pass: <version or change>"
+labels: ["human"]
+assignees: ["KitheK"]
+body:
+  - type: input
+    id: build
+    attributes: {label: Commit or tag under test}
+    validations: {required: true}
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist (see docs/manual-testing.md)
+      options:
+        - label: Live robots.txt spot check on 3 real public company sites
+        - label: Real Haiku 5.5 call returns schema-valid JSON within the cost cap
+        - label: Resume PDF is one page and matches Jake's layout (visual check)
+        - label: No send, connect or message control anywhere in the UI
+        - label: Opt-out removes a person everywhere, including saved lists
+        - label: Privacy notice and opt-out links work
+  - type: textarea
+    id: notes
+    attributes: {label: Findings, description: "No real names or emails"}
