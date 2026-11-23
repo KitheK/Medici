@@ -19,6 +19,11 @@ RESUME_SYSTEM_PROMPT = (
 _UNTRUSTED_OPEN = "<untrusted_data>"
 _UNTRUSTED_CLOSE = "</untrusted_data>"
 
+
+def escape_untrusted_posting(posting: str) -> str:
+    """Prevent posting text from closing the untrusted_data block early."""
+    return posting.replace(_UNTRUSTED_CLOSE, "&lt;/untrusted_data&gt;")
+
 _ENTRY_STRING = {"type": "string"}
 
 RESUME_JSON_SCHEMA: dict[str, Any] = {
@@ -70,7 +75,7 @@ RESUME_JSON_SCHEMA: dict[str, Any] = {
 }
 
 
-def _format_dates(start: str | None, end: str | None) -> str:
+def format_dates(start: str | None, end: str | None) -> str:
     if start and end:
         return f"{start} -- {end}"
     if start:
@@ -93,7 +98,8 @@ def build_resume_prompt(
         json.dumps(user.to_dict(), indent=2),
     ]
     if posting is not None and posting.strip():
-        wrapped = f"{_UNTRUSTED_OPEN}\n{posting.strip()}\n{_UNTRUSTED_CLOSE}"
+        safe = escape_untrusted_posting(posting.strip())
+        wrapped = f"{_UNTRUSTED_OPEN}\n{safe}\n{_UNTRUSTED_CLOSE}"
         parts.extend(
             [
                 "",
