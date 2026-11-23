@@ -15,7 +15,7 @@ from medici.resume.schema.facts import (
     allowed_schools,
     allowed_tools,
 )
-from medici.resume.schema.validate import ValidationError, validate_resume
+from medici.resume.schema.validate import ValidationError, date_tokens, validate_resume
 
 __all__ = [
     "EducationEntry",
@@ -27,6 +27,7 @@ __all__ = [
     "SchoolFact",
     "UserFacts",
     "ValidationError",
+    "date_tokens",
     "allowed_dates",
     "allowed_employers",
     "allowed_projects",
