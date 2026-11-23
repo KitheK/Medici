@@ -92,6 +92,46 @@ def test_render_escapes_hostile_bullets():
     assert r"\textbackslash{}" in tex
 
 
+def test_school_name_like_macro_does_not_inject_skills_section():
+    doc = ResumeDocument(
+        education=(
+            EducationEntry(
+                school="@@MEDICI_SKILLS@@",
+                degree="B.S. Example Studies",
+                dates="2018 -- 2020",
+            ),
+        ),
+        experience=(),
+        skills=("Python", "Docker"),
+    )
+    tex = render_resume(doc, template_path=_TEMPLATE)
+    education_part, _, rest = tex.partition(r"\section{Experience}")
+    assert education_part.count(r"\section{Technical Skills}") == 0
+    assert escape_latex("@@MEDICI_SKILLS@@") in education_part
+    assert rest.count(r"\section{Technical Skills}") == 1
+
+
+def test_skill_text_like_macro_does_not_break_render():
+    doc = ResumeDocument(
+        education=(),
+        experience=(),
+        skills=("@@MEDICI_EDUCATION@@", "Python"),
+    )
+    tex = render_resume(doc, template_path=_TEMPLATE)
+    assert escape_latex("@@MEDICI_EDUCATION@@") in tex
+    assert r"\section{Education}" in tex
+
+
+def test_experience_subheading_employer_bold_before_title():
+    tex = render_resume(_SAMPLE, template_path=_TEMPLATE)
+    employer = escape_latex("Loominary Labs")
+    title = escape_latex("Platform Engineer")
+    dates = escape_latex("Jun 2019 -- Present")
+    location = escape_latex("Ficton, EX")
+    chunk = f"{{{employer}}}{{{dates}}}\n {{{title}}}{{{location}}}"
+    assert chunk in tex
+
+
 def test_render_omits_empty_projects_section():
     doc = ResumeDocument(
         education=_SAMPLE.education,
