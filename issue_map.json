@@ -339,9 +339,9 @@
         "$ pytest tests/model -q",
         "Returns schema-valid JSON from Haiku 5.5 and from a local model; bad output retried once, then raises"
       ],
-      "status": "todo",
+      "status": "review",
       "passes": false,
-      "notes": ""
+      "notes": "Built while E1-2 gate is open per owner. Assumes Anthropic Messages API json_schema output_format for claude-haiku-5-5; local gateway POST /v1/complete with {prompt, schema} -> message.content JSON text (MEDICI_LOCAL_MODEL_URL)."
     },
     {
       "id": "E2-2",
