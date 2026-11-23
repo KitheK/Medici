@@ -104,6 +104,146 @@
       "notes": ""
     },
     {
+      "id": "H1-1",
+      "title": "Test layers: unit, integration, e2e and manual",
+      "epic": "H1",
+      "depends_on": [
+        "H0-2",
+        "H0-1",
+        "H0-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "Makefile",
+        "pyproject.toml",
+        "tests/**",
+        "docs/manual-testing.md",
+        ".github/ISSUE_TEMPLATE/**",
+        ".github/workflows/ci.yml"
+      ],
+      "acceptance": [
+        "$ make ci",
+        "make targets for each layer; CI runs them as separate jobs behind one required check; manual pass has a template"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "H1-2",
+      "title": "Cross-review by Claude and Cursor",
+      "epic": "H1",
+      "depends_on": [
+        "H0-3",
+        "H0-2",
+        "H1-1"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        ".github/workflows/agent-review.yml",
+        ".github/review-prompt.md",
+        ".github/actions/**",
+        ".github/CODEOWNERS",
+        ".cursor/**",
+        ".claude/**"
+      ],
+      "acceptance": [
+        "$ pytest tests/tools/test_workflows.py -q",
+        "Claude reviews Cursor and human PRs; Cursor reviews Claude and human PRs; gate passes only if one reviewer ran and none objected"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "H1-3",
+      "title": "Task queue with one lane per builder",
+      "epic": "H1",
+      "depends_on": [
+        "H0-3",
+        "H0-2",
+        "H1-1"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "tools/queue.py",
+        "tests/tools/test_queue.py"
+      ],
+      "acceptance": [
+        "$ pytest tests/tools/test_queue.py -q",
+        "each builder gets its own ready issue at the same time; dependencies and work-in-progress limits respected"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "H1-4",
+      "title": "Parallel builder workflows for Claude Code and Cursor",
+      "epic": "H1",
+      "depends_on": [
+        "H0-3",
+        "H0-2",
+        "H1-2",
+        "H1-3"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        ".github/workflows/build-claude.yml",
+        ".github/workflows/build-cursor.yml",
+        ".github/workflows/pr-hygiene.yml",
+        ".cursor/cli.json"
+      ],
+      "acceptance": [
+        "$ pytest tests/tools/test_workflows.py -q",
+        "two lanes with separate concurrency groups, opt-in, PRs open as drafts from claude/ and cursor/ branches"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "H1-5",
+      "title": "GitHub setup guide, labels and issue sync",
+      "epic": "H1",
+      "depends_on": [
+        "H0-3",
+        "H0-2",
+        "H1-4"
+      ],
+      "owner": "claude-code",
+      "labels": [
+        "size:M"
+      ],
+      "files_allowed": [
+        "docs/github-setup.md",
+        ".github/labels.json",
+        "tools/sync_github.py",
+        "AGENTS.md",
+        "README.md",
+        "progress.md"
+      ],
+      "acceptance": [
+        "$ make ci",
+        "secrets, variables, ruleset, smoke test and queue behaviour documented"
+      ],
+      "status": "done",
+      "passes": true,
+      "notes": ""
+    },
+    {
       "id": "E0-1",
       "title": "Purpose, data map, retention and saved-network rules",
       "epic": "E0",
