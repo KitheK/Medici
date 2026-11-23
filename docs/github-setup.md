@@ -70,6 +70,27 @@ does nothing. Sync keeps hand-added `agent-queue`, `agent-night`, `needs-human` 
 removes the two queue labels once an issue passes. To change the night time, edit the two `cron` lines
 (they are UTC).
 
+## Mentor feedback (for learning)
+
+`agent-feedback.yml` gives every PR one advisory review whose job is to teach good software
+engineering and keep the code good. It is not a gate and never fails a PR.
+
+- **When:** a PR is opened or marked ready, or you add the `agent-feedback` label to re-run it after
+  more commits (the workflow removes the label when done). Dependabot PRs are skipped.
+- **What you get:** a purpose check (does the code do what the issue and area guide say it is for?),
+  named patterns and anti-patterns, inline comments with one-click **suggested changes** where a fix
+  is clear, one or two alternative ways of thinking about a design choice with honest trade-offs,
+  what is working well, and a short list of concepts to read up on.
+- **Severity:** `fix` (likely defect or clear anti-pattern), `consider` (a better option),
+  `learn` (teaching point, no change needed).
+- **How it stays safe:** the reviewer is read-only and writes only `feedback.json`. A script
+  (`tools/post_feedback.py`) posts it: comments are anchored only to lines in the diff, `@mentions`
+  are neutralised, volume is capped at 15 inline comments, and a bad anchor falls back to the review
+  body instead of losing the feedback. The rubric is `.github/feedback-prompt.md`; edit it to change
+  what the mentor focuses on.
+- It is separate from the requirements gate (`agent-review.yml`), which checks acceptance criteria
+  and rules and does block.
+
 ## Smoke test (first time)
 
 1. Set the secrets. Do not set `ENABLE_AGENTS` yet.

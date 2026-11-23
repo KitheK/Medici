@@ -29,3 +29,9 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
 - Fixed builder workflows to target the repo default branch (`setup/phase-0`), not `main`.
 - CI and issue-sync push triggers include `setup/phase-0`; Cursor `agent` uses `--trust` in Actions.
 - `pr-hygiene` allows `Agent/` branches (Cursor Cloud Agent integration PRs).
+
+## 2026-11-22: Mentor feedback on PRs (H1-6)
+
+- Added `agent-feedback.yml`: an advisory, learning-focused review (purpose check, patterns and
+  anti-patterns, inline suggested fixes, alternatives, concepts) posted by `tools/post_feedback.py`.
+  Not a gate; label `agent-feedback` re-runs it.
