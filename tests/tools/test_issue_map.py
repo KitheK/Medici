@@ -89,7 +89,7 @@ def test_validator_rejects_missing_field_and_empty_files_allowed():
 def test_real_issue_map_is_valid_and_complete():
     data = im.load(im.DEFAULT_MAP)
     assert im.validate(data) == []
-    assert len(data["issues"]) == 42  # 37 plan issues + 5 CI issues (H1)
+    assert len(data["issues"]) == 43  # 37 plan issues + 6 CI issues (H1)
     index = im.by_id(data)
     for i in data["issues"]:
         if i["owner"] != "human":

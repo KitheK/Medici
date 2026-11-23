@@ -110,3 +110,17 @@ def test_scheduled_runs_use_the_night_label_and_other_runs_the_queue_label():
     action = yaml.safe_load((ROOT / ".github/actions/pick-issue/action.yml").read_text())
     assert action["inputs"]["label"]["required"] is True
     assert "--only" in (ROOT / ".github/actions/pick-issue/action.yml").read_text()
+
+
+def test_mentor_feedback_is_advisory_read_only_and_never_a_gate():
+    text = (WF / "agent-feedback.yml").read_text()
+    wf = load("agent-feedback.yml")
+    assert wf["jobs"]["feedback"]["steps"], "has steps"
+    assert "continue-on-error: true" in text  # a model hiccup must not fail the PR
+    assert '--allowedTools "Read,Glob,Grep,Write"' in text  # no shell, no git
+    assert ".github/feedback-prompt.md" in text and (ROOT / ".github/feedback-prompt.md").is_file()
+    assert "tools.post_feedback" in text
+    assert "cancel-in-progress: false" in text  # other labels also fire `labeled`
+    assert "feedback" not in " ".join(load("ci.yml")["jobs"]["ci"]["needs"])
+    assert "feedback" not in " ".join(load("agent-review.yml")["jobs"]["review-gate"]["needs"])
+    assert "dependabot/" in text  # bot PRs get no mentor review
