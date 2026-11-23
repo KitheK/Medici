@@ -12,7 +12,7 @@ Closed: add new entries as files in `progress/` (see `progress/README.md`), not 
 - Next: human issues E0-1 (data map) and E1-1 (30 hand-labelled postings) gate the first agent
   work. E1-2 is the go-or-narrow decision on hit rate.
 - Acceptance lines that start with `$ ` are the commands `complete` runs; the rest are prose for
-  reviewers. (A first version matched command words and mistook prose for a command.)
+  reviewers. (A first version matched command words and mistook prose for a command).
 - H0-1 to H0-4 closed with `complete`; they await review in the setup PR.
 
 ## 2026-11-22: CI, queue and cross-review (H1-1 to H1-5)

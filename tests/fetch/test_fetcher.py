@@ -41,14 +41,14 @@ def test_rejects_off_allowlist_before_request(monkeypatch):
 
 
 def test_skips_robots_blocked_path(fixture_base):
-    fetcher = Fetcher()
+    fetcher = Fetcher(allow_fixture_hosts=True)
     result = fetcher.get(fixture_base + "/private/")
     assert isinstance(result, Skipped)
     assert result.url.endswith("/private/")
 
 
 def test_fetches_allowlisted_fixture_page(fixture_base):
-    fetcher = Fetcher()
+    fetcher = Fetcher(allow_fixture_hosts=True)
     result = fetcher.get(fixture_base + "/team/")
     assert isinstance(result, Page)
     assert "Marisol Quenby" in result.markdown
@@ -57,7 +57,7 @@ def test_fetches_allowlisted_fixture_page(fixture_base):
 
 
 def test_hidden_injected_instructions_omitted_from_markdown(fixture_base):
-    fetcher = Fetcher()
+    fetcher = Fetcher(allow_fixture_hosts=True)
     result = fetcher.get(fixture_base + "/careers/injected.html")
     assert isinstance(result, Page)
     assert "IGNORE ALL PREVIOUS INSTRUCTIONS" not in result.markdown
@@ -114,15 +114,21 @@ def test_fetcher_rate_limits_same_host(fixture_base, monkeypatch):
         real_sleep(0)
 
     monkeypatch.setattr("medici.fetch.ratelimit.time.monotonic", fake_monotonic)
-    fetcher = Fetcher(clock=fake_monotonic, sleep=recording_sleep)
+    fetcher = Fetcher(
+        allow_fixture_hosts=True,
+        clock=fake_monotonic,
+        sleep=recording_sleep,
+    )
     fetcher.get(fixture_base + "/about/")
     clock[0] += 0.2
     fetcher.get(fixture_base + "/team/")
     assert calls and calls[-1] >= 0.79
 
 
-def test_localhost_in_allowlist(fixture_base):
-    assert_allowed(fixture_base + "/team/")
+def test_localhost_in_allowlist_when_fixture_flag_enabled(fixture_base):
+    assert_allowed(fixture_base + "/team/", allow_fixture_hosts=True)
+    with pytest.raises(NotAllowed):
+        assert_allowed(fixture_base + "/team/", allow_fixture_hosts=False)
 
 
 def test_example_test_suffix_hosts_allowed():
@@ -133,11 +139,19 @@ def test_example_test_suffix_hosts_allowed():
 
 def test_extra_company_host_allowed():
     def fake_urlopen(req, timeout=0):  # noqa: ARG001
+        from io import BytesIO
+
+        if req.full_url.endswith("/robots.txt"):
+            payload = b"User-agent: *\nAllow: /"
+        else:
+            payload = b"<html><body><h1>Acme</h1></body></html>"
+
         class R:
-            def read(self):
-                if req.full_url.endswith("/robots.txt"):
-                    return b"User-agent: *\nAllow: /"
-                return b"<html><body><h1>Acme</h1></body></html>"
+            def __init__(self) -> None:
+                self._buf = BytesIO(payload)
+
+            def read(self, n: int = -1) -> bytes:
+                return self._buf.read(n)
 
             def geturl(self):
                 return req.full_url
@@ -165,7 +179,7 @@ def test_extra_company_host_allowed():
 
 
 def test_page_records_final_url(fixture_base):
-    fetcher = Fetcher()
+    fetcher = Fetcher(allow_fixture_hosts=True)
     result = fetcher.get(fixture_base + "/team/")
     assert isinstance(result, Page)
     assert result.url == fixture_base + "/team/"
@@ -182,8 +196,8 @@ def test_robots_disallowed_does_not_hit_origin(fixture_base):
             raise HTTPError(req.full_url, 404, "", {}, None)
 
         class R:
-            def read(self):
-                return body
+            def read(self, n: int = -1):
+                return body if n < 0 else body[:n]
 
             def __enter__(self):
                 return self
@@ -193,7 +207,7 @@ def test_robots_disallowed_does_not_hit_origin(fixture_base):
 
         return R()
 
-    fetcher = Fetcher(urlopen_fn=fake_urlopen)
+    fetcher = Fetcher(allow_fixture_hosts=True, urlopen_fn=fake_urlopen)
     result = fetcher.get(fixture_base + "/private/index.html")
     assert isinstance(result, Skipped)
     assert not any("/private/" in u for u in fetches)
