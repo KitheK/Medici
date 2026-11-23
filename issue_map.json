@@ -717,7 +717,7 @@
       ],
       "status": "done",
       "passes": true,
-      "notes": "Stacked on issue/E5-1 (PR #54). Owner skipped human gates. No resume heading/contact until a later issue adds fields to ResumeDocument."
+      "notes": "Stacked on issue/E5-1 (PR #54). Owner skipped human gates. No resume heading/contact until a later issue adds fields to ResumeDocument. Blocker: stacked-PR files_allowed in CI may need a separate tooling issue (not E5-3 scope)."
     },
     {
       "id": "E5-4",
