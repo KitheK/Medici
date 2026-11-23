@@ -53,10 +53,5 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
   with `@@MEDICI_*@@` macros), and tests for escaping and macro fill.
 - Branched from `issue/E5-1`; PDF compile remains E5-4. No contact/heading block in output yet
   (`ResumeDocument` has no header fields).
-<<<<<<< HEAD
+- Review follow-up: single-pass macro fill, Jake employer/title order, optional `pdflatex` test.
 - Next: E5-4 sandboxed compile; E5-2 prompt when E2-1 lands.
-=======
-- Next: E5-4 sandboxed compile; E5-2 prompt when E2-1 lands.
-- Review follow-up: single-pass macro fill, Jake employer/title order, optional `pdflatex` test;
-  reverted out-of-scope CI workflow tweak (needs its own issue).
->>>>>>> 080974d (Revert out-of-scope CI workflow change from E5-3)
