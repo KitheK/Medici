@@ -36,11 +36,11 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GH_PAT }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}   # PAT so the PR triggers CI and the reviewers
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: {python-version: "3.12"}
       - run: make install && make hooks
       - name: Label-triggered runs name their issue by title

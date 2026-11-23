@@ -38,11 +38,11 @@ jobs:
       GH_TOKEN: ${{ secrets.GH_PAT }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with: {python-version: "3.12"}
       - uses: actions/setup-node@v4
         with: {node-version: 22}
