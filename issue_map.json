@@ -664,9 +664,9 @@
         "$ pytest tests/resume -q",
         "Validator rejects any employer, school, date or tool not in the user's facts"
       ],
-      "status": "review",
-      "passes": false,
-      "notes": "Owner skipped unfinished E0-1 gate for this session. E2-1 (model client) not required here—schema/validator are pure Python with dict round-trips for E5-2. Resume JSON shape: education, experience, skills, optional projects; dates split on --/–/-/to."
+      "status": "done",
+      "passes": true,
+      "notes": "Owner skipped unfinished E0-1 gate for this session. E2-1 (model client) not required here\u2014schema/validator are pure Python with dict round-trips for E5-2. Resume JSON shape: education, experience, skills, optional projects; dates split on --/\u2013/-/to."
     },
     {
       "id": "E5-2",
