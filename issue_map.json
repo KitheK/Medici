@@ -212,7 +212,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "size:M"
       ],
@@ -225,9 +225,9 @@
         "$ pytest tests/posting -q",
         "Extracts company, domain, title, team text and named contact on 10 fixture postings"
       ],
-      "status": "todo",
+      "status": "in_progress",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E2-3",
@@ -266,7 +266,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -279,9 +279,9 @@
         "$ pytest tests/contacts -q",
         "Returns contacts with excerpts; rejects a planted name absent from the page text"
       ],
-      "status": "todo",
+      "status": "in_progress",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E2-5",
@@ -321,7 +321,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "size:S"
       ],
@@ -335,7 +335,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E3-1",
@@ -347,7 +347,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -362,7 +362,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E3-2",
@@ -373,7 +373,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -388,7 +388,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E3-3",
@@ -400,7 +400,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -415,7 +415,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E3-4",
@@ -426,7 +426,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -439,9 +439,9 @@
         "$ pytest tests/optout -q",
         "A suppressed person never appears in output"
       ],
-      "status": "todo",
+      "status": "in_progress",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E4-1",
@@ -452,7 +452,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -467,7 +467,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E4-2",
@@ -478,7 +478,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:S"
@@ -493,7 +493,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E5-1",
@@ -531,7 +531,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "size:M"
       ],
@@ -543,9 +543,9 @@
         "$ pytest tests/resume -q",
         "Schema-valid JSON on 10 sample fact sets; an injected posting leaves output unchanged"
       ],
-      "status": "todo",
+      "status": "in_progress",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E5-3",
@@ -556,7 +556,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "size:M"
       ],
@@ -569,9 +569,9 @@
         "$ pytest tests/resume -q",
         "Fills Jake's template macros and escapes & % $ # _ { } ~ ^ \\\\"
       ],
-      "status": "todo",
+      "status": "in_progress",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E5-4",
@@ -582,7 +582,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:sandbox",
         "size:M"
@@ -597,7 +597,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E5-5",
