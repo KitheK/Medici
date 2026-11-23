@@ -85,7 +85,8 @@ jobs:
             6. Push and open a DRAFT pull request. The body starts with
                "Closes #${{ steps.pick.outputs.number }}", then lists each acceptance criterion and
                how it was verified. Cursor will review it; do not review your own work.
-            Never push to main and never merge.
+            Open the PR against the repo default branch (${{ github.event.repository.default_branch }}).
+            Never merge.
       - name: Fail loudly if no PR was opened
         if: steps.pick.outputs.id != '' && always()
         run: |

@@ -46,11 +46,11 @@ Leave `ENABLE_AGENTS` unset until the smoke test below passes; with it unset, `r
 ## Repository settings
 
 - Actions → General → Workflow permissions: read and write.
-- Ruleset for `main`: require a pull request; require status checks `ci` and `review-gate`
-  (they appear in the picker after their first run); require review from Code Owners once a second
-  reviewer exists. With one person, leave approvals off: agent PRs are opened with your token and you
-  cannot approve your own PR. The two checks plus your merge click are the gate.
-- Labels and issues: `python3 -m tools.sync_github` (also runs on merge to `main`).
+- Ruleset for `setup/phase-0` (current default branch): require a pull request; require status checks
+  `ci` and `review-gate` (they appear in the picker after their first run); require review from Code
+  Owners once a second reviewer exists. With one person, leave approvals off: agent PRs are opened
+  with your PAT and you cannot approve your own PR. The two checks plus your merge click are the gate.
+- Labels and issues: `python3 -m tools.sync_github` (also runs on merge to `setup/phase-0`).
 
 ## Queue behaviour
 
@@ -66,9 +66,9 @@ label on an issue, or `workflow_dispatch`.
 2. Open a PR from a `ci/` or `docs/` branch: `ci` runs, `review-gate` passes with a notice.
 3. Set `ENABLE_AGENTS=true`. Open a small human PR: both reviewers run and post reviews.
 4. After E0-1, E1-1 and E1-2 are closed, run `build-claude` and `build-cursor` with `workflow_dispatch`.
-5. Check these against current docs on the first run, because I could not run them from here:
-   `agent -p --force` and `.cursor/cli.json` permission syntax (Cursor CLI docs), and the
-   `claude-code-action@v1` inputs.
+5. On the first real run, confirm `agent -p --force --trust`, `CURSOR_API_KEY`, and
+   `claude-code-action@v1` inputs against current Cursor and Claude docs (see
+   [Cursor CLI in GitHub Actions](https://cursor.com/docs/cli/github-actions)).
 
 ## Safety notes
 

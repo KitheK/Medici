@@ -84,7 +84,7 @@ jobs:
           MODEL: ${{ vars.CURSOR_MODEL }}
         run: |
           model=(); [ -n "$MODEL" ] && model=(--model "$MODEL")
-          timeout 25m agent -p --force "${model[@]}" "$(cat .github/review-prompt.md)"
+          timeout 25m agent -p --force --trust "${model[@]}" "$(cat .github/review-prompt.md)"
       - name: Post review and enforce verdict
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

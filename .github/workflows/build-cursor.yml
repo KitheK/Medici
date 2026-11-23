@@ -36,6 +36,7 @@ jobs:
     timeout-minutes: 60
     env:
       GH_TOKEN: ${{ secrets.GH_PAT }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,7 +76,7 @@ jobs:
         run: |
           git switch -c "cursor/issue-$ID"
           model=(); [ -n "$MODEL" ] && model=(--model "$MODEL")
-          timeout 45m agent -p --force "${model[@]}" "Build issue $ID (GitHub issue #$NUM).
+          timeout 45m agent -p --force --trust "${model[@]}" "Build issue $ID (GitHub issue #$NUM).
           Read AGENTS.md, the entry for $ID in issue_map.json, and the AGENTS.md of each folder in its
           files_allowed. Write the failing test first, then the code. Edit only files matching files_allowed,
           plus progress.md (add a dated entry). Set this issue's status to in_progress in issue_map.json but
@@ -92,7 +93,7 @@ jobs:
           git add -A
           git diff --cached --quiet && { echo "::error::Cursor made no changes for $ID"; exit 1; }
           git commit -q -m "[$ID] Cursor build"
-          python -m tools.check_files_allowed origin/main
+          python -m tools.check_files_allowed "origin/$DEFAULT_BRANCH"
       - name: Push and open a draft PR
         if: steps.pick.outputs.id != ''
         env:
@@ -100,7 +101,7 @@ jobs:
           NUM: ${{ steps.pick.outputs.number }}
         run: |
           git push -u origin "cursor/issue-$ID"
-          gh pr create --draft --base main --head "cursor/issue-$ID" \
+          gh pr create --draft --base "$DEFAULT_BRANCH" --head "cursor/issue-$ID" \
             --title "[$ID] build by Cursor" \
             --body "Closes #$NUM
 
