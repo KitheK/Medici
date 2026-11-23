@@ -61,17 +61,44 @@ def test_builders_are_opt_in():
 
 def test_nobody_reviews_their_own_pull_request():
     wf = load("agent-review.yml")
-    assert "!startsWith(github.head_ref, 'claude/')" in wf["jobs"]["claude-review"]["if"]
-    assert "!startsWith(github.head_ref, 'cursor/')" in wf["jobs"]["cursor-review"]["if"]
-    assert set(wf["jobs"]["review-gate"]["needs"]) == {"claude-review", "cursor-review"}
+    assert wf["jobs"]["claude-review"]["if"] == "needs.prepare.outputs.run_claude == 'true'"
+    assert wf["jobs"]["cursor-review"]["if"] == "needs.prepare.outputs.run_cursor == 'true'"
+    assert set(wf["jobs"]["review-gate"]["needs"]) == {"prepare", "claude-review", "cursor-review"}
 
 
 def test_reviewers_are_read_only_and_share_one_rubric():
     text = (WF / "agent-review.yml").read_text()
     assert text.count(".github/review-prompt.md") >= 2
+    assert "review-rerequest-prompt.md" in text
     assert '--allowedTools "Read,Glob,Grep,Write"' in text
     assert "Shell(*)" in text  # cursor reviewer has no shell
     assert (ROOT / ".github" / "review-prompt.md").is_file()
+
+
+def test_review_request_labels_exist():
+    labels = {e["name"] for e in yaml.safe_load((ROOT / ".github" / "labels.json").read_text())}
+    for name in (
+        "review:claude",
+        "review:cursor",
+        "review:request",
+        "review:rerequest",
+        "review:pass",
+        "review:changes",
+    ):
+        assert name in labels
+
+
+def test_agent_review_can_be_requested_safely():
+    wf = load("agent-review.yml")
+    on = triggers(wf)
+    assert "labeled" in on["pull_request"]["types"]
+    assert "issue_comment" in on
+    assert "workflow_dispatch" in on
+    text = (WF / "agent-review.yml").read_text()
+    assert "review:request" in text
+    assert "/review" in text
+    assert "collaborators" in text  # comment commands check write permission
+    assert "prepare" in wf["jobs"]
 
 
 def test_builders_cannot_touch_workflows_or_tooling():

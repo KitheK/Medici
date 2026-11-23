@@ -60,6 +60,26 @@ most one issue at a time. Human issues (E0, E1, E8-3) never enter an agent lane;
 E1-2 are done the agent queue is empty by design. Run on demand with the `claude-now` or `cursor-now`
 label on an issue, or `workflow_dispatch`.
 
+## Requesting cross-review
+
+Automatic: when a PR is opened, reopened or marked ready for review (and not a draft),
+`agent-review` adds `review:claude` and `review:cursor`, then both reviewers run if `ENABLE_AGENTS=true`.
+
+Manual re-run (same requirements as automatic):
+
+| Control | What it does |
+|---|---|
+| Label `review:request` | Queue a fresh cross-review (label is removed when the run starts) |
+| Label `review:rerequest` | Re-review the **full current diff**; rubric emphasises prior review comments |
+| PR comment `/review` or `/rereview` | Same as the labels; author must have **write** (or be the repo owner) |
+| `workflow_dispatch` on **agent-review** | `pr_number` required; set `rereview` for a re-review pass |
+
+Outcome labels: `review:pass` or `review:changes` (set by `review-gate`).
+
+If `claude-review` and `cursor-review` are **skipped** while `review-gate` is green, the repo
+variable `ENABLE_AGENTS` is not `true`. Set it only after `CLAUDE_CODE_OAUTH_TOKEN`, `CURSOR_API_KEY`
+and (for builders) `GH_PAT` are configured (table above).
+
 ## Smoke test (first time)
 
 1. Set the secrets. Do not set `ENABLE_AGENTS` yet.

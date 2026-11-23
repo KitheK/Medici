@@ -2,11 +2,29 @@
 # wrote. A builder never reviews its own PR. Both reviewers run in parallel on human PRs.
 # Reviewers are read-only: they get the PR as plain files and write only review.md and verdict.txt;
 # this workflow posts the review. `review-gate` is the second required status check.
+#
+# Manual controls (need ENABLE_AGENTS=true and reviewer secrets — see docs/github-setup.md):
+#   • Labels `review:request` / `review:rerequest` (removed when the run starts)
+#   • PR comment `/review` or `/rereview` from someone with write access
+#   • workflow_dispatch with pr_number (optional rereview: true)
 name: agent-review
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to review
+        required: true
+        type: number
+      rereview:
+        description: Re-review (full diff; focus on prior comments)
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -15,15 +33,181 @@ permissions:
   id-token: write
 
 concurrency:
-  group: review-${{ github.event.pull_request.number }}
+  group: review-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      pr: ${{ steps.meta.outputs.pr }}
+      rereview: ${{ steps.meta.outputs.rereview }}
+      run_claude: ${{ steps.meta.outputs.run_claude }}
+      run_cursor: ${{ steps.meta.outputs.run_cursor }}
+      enabled: ${{ steps.meta.outputs.enabled }}
+      gate: ${{ steps.meta.outputs.gate }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Decide whether to run and which PR
+        id: meta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          EVENT: ${{ github.event_name }}
+          ENABLED: ${{ vars.ENABLE_AGENTS }}
+          PR_INPUT: ${{ github.event.inputs.pr_number }}
+          REREVIEW_INPUT: ${{ github.event.inputs.rereview }}
+          ACTOR: ${{ github.actor }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_USER: ${{ github.event.comment.user.login }}
+          LABEL_ADDED: ${{ github.event.label.name }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          pr=""
+          rereview=false
+          want=false
+
+          enabled=false
+          [ "$ENABLED" = "true" ] && enabled=true
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            pr="$PR_INPUT"
+            [ "$REREVIEW_INPUT" = "true" ] && rereview=true
+            want=true
+          elif [ "$EVENT" = "issue_comment" ]; then
+            pr="$ISSUE_NUM"
+            body=$(printf '%s' "$COMMENT_BODY" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            case "$body" in
+              /review) ;;
+              /rereview) rereview=true ;;
+              *) echo "Comment is not a review command; skipping."; exit 0 ;;
+            esac
+            if ! gh pr view "$pr" --json number --jq .number >/dev/null 2>&1; then
+              echo "Issue is not a pull request; skipping."; exit 0
+            fi
+            perm=$(gh api "repos/$REPO/collaborators/$COMMENT_USER/permission" --jq .permission 2>/dev/null || echo none)
+            case "$perm" in
+              admin|maintain|write) ;;
+              *)
+                if [ "$COMMENT_USER" != "$OWNER" ]; then
+                  gh pr comment "$pr" --body "Cross-review commands need write access on this repo."
+                  echo "Insufficient permission"; exit 0
+                fi
+                ;;
+            esac
+            want=true
+          elif [ "$EVENT" = "pull_request" ]; then
+            pr="$PR_NUM"
+            case "$PR_ACTION" in
+              opened|synchronize|reopened)
+                want=true
+                [ "$PR_DRAFT" = "true" ] && want=false
+                ;;
+              ready_for_review)
+                want=true
+                ;;
+              labeled)
+                case "$LABEL_ADDED" in
+                  review:request) want=true ;;
+                  review:rerequest) want=true; rereview=true ;;
+                  *) want=false ;;
+                esac
+                ;;
+            esac
+          fi
+
+          if [ -z "$pr" ]; then
+            echo "No PR to review; skipping."
+            {
+              echo "pr="
+              echo "rereview=false"
+              echo "run_claude=false"
+              echo "run_cursor=false"
+              echo "enabled=$enabled"
+              echo "gate=skip"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -z "$HEAD_REF" ] || [ -z "$HEAD_REPO" ] || [ "$HEAD_REPO" = "null" ]; then
+            meta=$(gh pr view "$pr" --json headRefName,isDraft,headRepositoryOwner)
+            HEAD_REF=$(echo "$meta" | jq -r .headRefName)
+            PR_DRAFT=$(echo "$meta" | jq -r .isDraft)
+            head_owner=$(echo "$meta" | jq -r .headRepositoryOwner.login)
+            repo_owner="${REPO%%/*}"
+            if [ "$head_owner" = "$repo_owner" ]; then
+              HEAD_REPO="$REPO"
+            else
+              HEAD_REPO="$head_owner/$(echo "$REPO" | cut -d/ -f2)"
+            fi
+          fi
+
+          run_claude=false
+          run_cursor=false
+          if $want && $enabled; then
+            if [ "$HEAD_REPO" != "$REPO" ]; then
+              echo "::notice::Fork PR; agent reviewers do not run (no secrets on untrusted heads)."
+            else
+              case "$HEAD_REF" in
+                claude/*) run_claude=false; run_cursor=true ;;
+                cursor/*) run_claude=true; run_cursor=false ;;
+                *) run_claude=true; run_cursor=true ;;
+              esac
+            fi
+          elif $want && ! $enabled; then
+            echo "::notice::ENABLE_AGENTS is not true — reviewers stay off; review-gate passes without them."
+            if [ -n "$pr" ] && [ "$EVENT" = "pull_request" ] && [ "$PR_ACTION" = "labeled" ]; then
+              case "$LABEL_ADDED" in
+                review:request|review:rerequest)
+                  gh pr comment "$pr" --body \
+                    "Agent review is off (set repo variable \`ENABLE_AGENTS\` to \`true\` and configure \`CLAUDE_CODE_OAUTH_TOKEN\` + \`CURSOR_API_KEY\` — see \`docs/github-setup.md\`)."
+                  ;;
+              esac
+            fi
+          fi
+
+          if $want && $enabled && [ "$EVENT" = "pull_request" ]; then
+            case "$PR_ACTION" in
+              opened|reopened|ready_for_review)
+                gh pr edit "$pr" --add-label review:cursor --add-label review:claude || true
+                ;;
+            esac
+            if [ "$PR_ACTION" = "labeled" ]; then
+              case "$LABEL_ADDED" in
+                review:request|review:rerequest)
+                  gh pr edit "$pr" --remove-label "$LABEL_ADDED" || true
+                  gh pr edit "$pr" --add-label review:cursor --add-label review:claude || true
+                  ;;
+              esac
+            fi
+          fi
+
+          gate=skip
+          if ! $enabled; then
+            gate=off
+          elif $want && { $run_claude || $run_cursor; }; then
+            gate=run
+          fi
+
+          {
+            echo "pr=$pr"
+            echo "rereview=$rereview"
+            echo "run_claude=$run_claude"
+            echo "run_cursor=$run_cursor"
+            echo "enabled=$enabled"
+            echo "gate=$gate"
+          } >> "$GITHUB_OUTPUT"
+
   claude-review:
-    if: >-
-      vars.ENABLE_AGENTS == 'true' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      !startsWith(github.head_ref, 'claude/')
+    needs: prepare
+    if: needs.prepare.outputs.run_claude == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -31,12 +215,20 @@ jobs:
         with: {fetch-depth: 0}
       - uses: ./.github/actions/review-context
         with:
-          pr: ${{ github.event.pull_request.number }}
+          pr: ${{ needs.prepare.outputs.pr }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          rereview: ${{ needs.prepare.outputs.rereview }}
       - name: Load the shared rubric
         id: rubric
+        env:
+          REREVIEW: ${{ needs.prepare.outputs.rereview }}
         run: |
-          { echo 'text<<RUBRIC_EOF'; cat .github/review-prompt.md; echo 'RUBRIC_EOF'; } >> "$GITHUB_OUTPUT"
+          {
+            echo 'text<<RUBRIC_EOF'
+            if [ "$REREVIEW" = "true" ]; then cat .github/review-rerequest-prompt.md; fi
+            cat .github/review-prompt.md
+            echo 'RUBRIC_EOF'
+          } >> "$GITHUB_OUTPUT"
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -47,7 +239,7 @@ jobs:
       - name: Post review and enforce verdict
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
+          PR: ${{ needs.prepare.outputs.pr }}
         run: |
           [ -f review.md ] && gh pr review "$PR" --comment --body-file review.md || echo "no review.md"
           v=$(tr -d '[:space:]' < verdict.txt 2>/dev/null || echo MISSING)
@@ -55,10 +247,8 @@ jobs:
           [ "$v" = "PASS" ] || { echo "::error::Claude requested changes (verdict $v)"; exit 1; }
 
   cursor-review:
-    if: >-
-      vars.ENABLE_AGENTS == 'true' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      !startsWith(github.head_ref, 'cursor/')
+    needs: prepare
+    if: needs.prepare.outputs.run_cursor == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -66,8 +256,9 @@ jobs:
         with: {fetch-depth: 0}
       - uses: ./.github/actions/review-context
         with:
-          pr: ${{ github.event.pull_request.number }}
+          pr: ${{ needs.prepare.outputs.pr }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          rereview: ${{ needs.prepare.outputs.rereview }}
       - name: Install Cursor CLI
         run: |
           curl https://cursor.com/install -fsS | bash
@@ -82,13 +273,17 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           MODEL: ${{ vars.CURSOR_MODEL }}
+          REREVIEW: ${{ needs.prepare.outputs.rereview }}
         run: |
+          prompt=$(mktemp)
+          if [ "$REREVIEW" = "true" ]; then cat .github/review-rerequest-prompt.md >> "$prompt"; fi
+          cat .github/review-prompt.md >> "$prompt"
           model=(); [ -n "$MODEL" ] && model=(--model "$MODEL")
-          timeout 25m agent -p --force --trust "${model[@]}" "$(cat .github/review-prompt.md)"
+          timeout 25m agent -p --force --trust "${model[@]}" "$(cat "$prompt")"
       - name: Post review and enforce verdict
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
+          PR: ${{ needs.prepare.outputs.pr }}
         run: |
           [ -f review.md ] && gh pr review "$PR" --comment --body-file review.md || echo "no review.md"
           v=$(tr -d '[:space:]' < verdict.txt 2>/dev/null || echo MISSING)
@@ -97,21 +292,28 @@ jobs:
 
   # Required status check. Passes when at least one reviewer ran and none objected.
   review-gate:
-    if: always()
-    needs: [claude-review, cursor-review]
+    if: always() && needs.prepare.result == 'success'
+    needs: [prepare, claude-review, cursor-review]
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PR: ${{ github.event.pull_request.number }}
-      ENABLED: ${{ vars.ENABLE_AGENTS }}
+      PR: ${{ needs.prepare.outputs.pr }}
+      ENABLED: ${{ needs.prepare.outputs.enabled }}
+      GATE: ${{ needs.prepare.outputs.gate }}
       CLAUDE: ${{ needs.claude-review.result }}
       CURSOR: ${{ needs.cursor-review.result }}
     steps:
       - name: Decide
         run: |
-          echo "claude=$CLAUDE cursor=$CURSOR enabled=$ENABLED"
-          if [ "$ENABLED" != "true" ]; then
+          echo "claude=$CLAUDE cursor=$CURSOR enabled=$ENABLED gate=$GATE"
+          if [ "$GATE" = "off" ]; then
             echo "::notice::Agent review is switched off (ENABLE_AGENTS); gate passes without it."; exit 0
+          fi
+          if [ "$GATE" = "skip" ]; then
+            echo "::notice::No agent review run requested for this event."; exit 0
+          fi
+          if [ -z "$PR" ]; then
+            echo "::notice::No review run requested."; exit 0
           fi
           if [ "$CLAUDE" = failure ] || [ "$CURSOR" = failure ] || [ "$CLAUDE" = cancelled ] || [ "$CURSOR" = cancelled ]; then
             gh pr edit "$PR" --add-label review:changes --remove-label review:pass || true
