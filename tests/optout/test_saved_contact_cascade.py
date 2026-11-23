@@ -20,6 +20,8 @@ def test_opt_out_deletes_saved_contact_matching_identifier(db_conn, suppression_
         excerpt=f"Contact {IDENTIFIER} on the team page.",
         saved=True,
         now=NOW,
+        identifier=IDENTIFIER,
+        suppression_key=suppression_key,
     )
     save_contact(
         db_conn,
@@ -29,12 +31,14 @@ def test_opt_out_deletes_saved_contact_matching_identifier(db_conn, suppression_
         excerpt="Alex Keep alex.keep@example.test",
         saved=True,
         now=NOW,
+        identifier="alex.keep@example.test",
+        suppression_key=suppression_key,
     )
-    assert len(list_contacts(db_conn)) == 2
+    assert len(list_contacts(db_conn, now=NOW)) == 2
 
     opt_out(db_conn, IDENTIFIER, key=suppression_key)
 
-    remaining = list_contacts(db_conn)
+    remaining = list_contacts(db_conn, now=NOW)
     assert len(remaining) == 1
     assert remaining[0].name == "Alex Keep"
 
@@ -48,6 +52,8 @@ def test_opt_out_leaves_unsaved_rows_until_expiry(db_conn, suppression_key):
         excerpt=f"Pat Draft {IDENTIFIER}",
         saved=False,
         now=NOW,
+        identifier=IDENTIFIER,
+        suppression_key=suppression_key,
     )
     opt_out(db_conn, IDENTIFIER, key=suppression_key)
-    assert len(list_contacts(db_conn)) == 1
+    assert len(list_contacts(db_conn, now=NOW)) == 1
