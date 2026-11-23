@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -59,8 +60,8 @@ def _experience_block(doc: ResumeDocument) -> str:
         dates = escape_latex(entry.dates)
         location = escape_latex(entry.location or "")
         lines.append(" \\resumeSubheading")
-        lines.append(f" {{{title}}}{{{dates}}}")
-        lines.append(f" {{{employer}}}{{{location}}}")
+        lines.append(f" {{{employer}}}{{{dates}}}")
+        lines.append(f" {{{title}}}{{{location}}}")
         if entry.bullets:
             lines.append(r" \resumeItemListStart")
             for bullet in entry.bullets:
@@ -112,6 +113,21 @@ def _skills_block(doc: ResumeDocument) -> str:
     )
 
 
+def _fill_template_macros(template: str, replacements: dict[str, str]) -> str:
+    """Substitute each macro once on the template text only (not on replacement bodies)."""
+    for macro in TEMPLATE_MACROS:
+        if macro not in template:
+            msg = f"missing template macro {macro!r}"
+            raise ValueError(msg)
+    pattern = re.compile("|".join(re.escape(m) for m in TEMPLATE_MACROS))
+
+    def _replace(match: re.Match[str]) -> str:
+        key = match.group(0)
+        return replacements[key]
+
+    return pattern.sub(_replace, template)
+
+
 def render_resume(
     resume: ResumeDocument | Mapping[str, object],
     *,
@@ -128,14 +144,4 @@ def render_resume(
         TEMPLATE_MACROS[2]: _projects_block(document),
         TEMPLATE_MACROS[3]: _skills_block(document),
     }
-    out = template
-    for macro, body in replacements.items():
-        if macro not in out:
-            msg = f"missing template macro {macro!r}"
-            raise ValueError(msg)
-        out = out.replace(macro, body)
-    for macro in TEMPLATE_MACROS:
-        if macro in out:
-            msg = f"unfilled template macro {macro!r}"
-            raise ValueError(msg)
-    return out
+    return _fill_template_macros(template, replacements)
