@@ -10,12 +10,12 @@ jobs:
   hygiene:
     runs-on: ubuntu-latest
     steps:
-      - name: Branch name names an issue (or is setup, ci, docs, chore)
+      - name: Branch name names an issue (or is setup, ci, docs, chore, Agent, dependabot)
         env:
           BRANCH: ${{ github.head_ref }}
         run: |
-          echo "$BRANCH" | grep -Eq '^((issue|claude/issue|cursor/issue)[/-][HE][0-9]+-[0-9]+.*|(setup|ci|docs|chore|Agent)/.+)$' || {
-            echo "Branch '$BRANCH' must look like issue/E2-3, claude/issue-E2-3, cursor/issue-E2-3, setup/ci/docs/chore/..., or Agent/..."; exit 1; }
+          echo "$BRANCH" | grep -Eq '^((issue|claude/issue|cursor/issue)[/-][HE][0-9]+-[0-9]+.*|(setup|ci|docs|chore|Agent|dependabot)/.+)$' || {
+            echo "Branch '$BRANCH' must look like issue/E2-3, claude/issue-E2-3, cursor/issue-E2-3, setup/ci/docs/chore/..., Agent/... or dependabot/..."; exit 1; }
       - name: Issue branches link their issue
         if: contains(github.head_ref, 'issue')
         env:

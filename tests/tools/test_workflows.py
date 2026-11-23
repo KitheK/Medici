@@ -93,3 +93,10 @@ def test_branch_names_match_between_hygiene_scope_check_and_builders():
 def test_injection_detector_catches_a_bad_script():
     assert UNTRUSTED.search('echo "${{ github.event.pull_request.title }}"')
     assert not UNTRUSTED.search('echo "$TITLE"')
+
+
+def test_hygiene_accepts_dependency_bot_branches_without_an_issue_link():
+    hygiene = (WF / "pr-hygiene.yml").read_text()
+    assert "dependabot" in hygiene
+    # the "Closes #n" rule only applies to branches that name an issue
+    assert "contains(github.head_ref, 'issue')" in hygiene
