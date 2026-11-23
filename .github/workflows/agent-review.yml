@@ -1,0 +1,123 @@
+# Cross-review. Claude reviews what Cursor and humans wrote; Cursor reviews what Claude and humans
+# wrote. A builder never reviews its own PR. Both reviewers run in parallel on human PRs.
+# Reviewers are read-only: they get the PR as plain files and write only review.md and verdict.txt;
+# this workflow posts the review. `review-gate` is the second required status check.
+name: agent-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  claude-review:
+    if: >-
+      vars.ENABLE_AGENTS == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !startsWith(github.head_ref, 'claude/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with: {fetch-depth: 0}
+      - uses: ./.github/actions/review-context
+        with:
+          pr: ${{ github.event.pull_request.number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load the shared rubric
+        id: rubric
+        run: |
+          { echo 'text<<RUBRIC_EOF'; cat .github/review-prompt.md; echo 'RUBRIC_EOF'; } >> "$GITHUB_OUTPUT"
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --max-turns 30
+            --allowedTools "Read,Glob,Grep,Write"
+          prompt: ${{ steps.rubric.outputs.text }}
+      - name: Post review and enforce verdict
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          [ -f review.md ] && gh pr review "$PR" --comment --body-file review.md || echo "no review.md"
+          v=$(tr -d '[:space:]' < verdict.txt 2>/dev/null || echo MISSING)
+          echo "Claude verdict: $v"
+          [ "$v" = "PASS" ] || { echo "::error::Claude requested changes (verdict $v)"; exit 1; }
+
+  cursor-review:
+    if: >-
+      vars.ENABLE_AGENTS == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !startsWith(github.head_ref, 'cursor/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with: {fetch-depth: 0}
+      - uses: ./.github/actions/review-context
+        with:
+          pr: ${{ github.event.pull_request.number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Cursor CLI
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
+      - name: Read-only permissions for this run
+        run: |
+          cat > .cursor/cli.json <<'JSON'
+          {"permissions": {"allow": ["Read(**)", "Write(review.md)", "Write(verdict.txt)"],
+                           "deny": ["Shell(*)", "Write(.github/**)", "Write(src/**)", "Write(.env*)"]}}
+          JSON
+      - name: Cursor reviews
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          MODEL: ${{ vars.CURSOR_MODEL }}
+        run: |
+          model=(); [ -n "$MODEL" ] && model=(--model "$MODEL")
+          timeout 25m agent -p --force --trust "${model[@]}" "$(cat .github/review-prompt.md)"
+      - name: Post review and enforce verdict
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          [ -f review.md ] && gh pr review "$PR" --comment --body-file review.md || echo "no review.md"
+          v=$(tr -d '[:space:]' < verdict.txt 2>/dev/null || echo MISSING)
+          echo "Cursor verdict: $v"
+          [ "$v" = "PASS" ] || { echo "::error::Cursor requested changes (verdict $v)"; exit 1; }
+
+  # Required status check. Passes when at least one reviewer ran and none objected.
+  review-gate:
+    if: always()
+    needs: [claude-review, cursor-review]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR: ${{ github.event.pull_request.number }}
+      ENABLED: ${{ vars.ENABLE_AGENTS }}
+      CLAUDE: ${{ needs.claude-review.result }}
+      CURSOR: ${{ needs.cursor-review.result }}
+    steps:
+      - name: Decide
+        run: |
+          echo "claude=$CLAUDE cursor=$CURSOR enabled=$ENABLED"
+          if [ "$ENABLED" != "true" ]; then
+            echo "::notice::Agent review is switched off (ENABLE_AGENTS); gate passes without it."; exit 0
+          fi
+          if [ "$CLAUDE" = failure ] || [ "$CURSOR" = failure ] || [ "$CLAUDE" = cancelled ] || [ "$CURSOR" = cancelled ]; then
+            gh pr edit "$PR" --add-label review:changes --remove-label review:pass || true
+            echo "::error::A reviewer requested changes or failed."; exit 1
+          fi
+          if [ "$CLAUDE" != success ] && [ "$CURSOR" != success ]; then
+            echo "::error::No reviewer ran."; exit 1
+          fi
+          gh pr edit "$PR" --add-label review:pass --remove-label review:changes || true

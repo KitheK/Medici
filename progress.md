@@ -14,3 +14,18 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
 - Acceptance lines that start with `$ ` are the commands `complete` runs; the rest are prose for
   reviewers. (A first version matched command words and mistook prose for a command.)
 - H0-1 to H0-4 closed with `complete`; they await review in the setup PR.
+
+## 2026-11-22: CI, queue and cross-review (H1-1 to H1-5)
+
+- Split CI into unit, integration, e2e, privacy and scope jobs behind one required `ci` check.
+- Added `tools/queue.py`: one lane per builder, so Claude Code and Cursor build at the same time.
+- Added `build-claude.yml`, `build-cursor.yml` and `agent-review.yml` (cross-review, `review-gate`).
+- Unverified until the first real run: Cursor CLI flags and `.cursor/cli.json` syntax, and
+  `claude-code-action@v1` inputs. See the smoke test in `docs/github-setup.md`.
+
+## 2026-11-23: Land CI and Cursor lanes on setup/phase-0
+
+- Cherry-picked PR #45 agent/CI stack onto `setup/phase-0` (was only on `setup/github-workflow-2`).
+- Fixed builder workflows to target the repo default branch (`setup/phase-0`), not `main`.
+- CI and issue-sync push triggers include `setup/phase-0`; Cursor `agent` uses `--trust` in Actions.
+- `pr-hygiene` allows `Agent/` branches (Cursor Cloud Agent integration PRs).
