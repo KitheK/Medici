@@ -7,13 +7,13 @@ issue_map.json ── queue (tools/queue.py) ─┬─ claude-code lane ─► b
  (deps, owner, WIP limit per lane)        └─ cursor lane      ─► build-cursor.yml ─► PR cursor/issue-ID ──┤
                                                                                                            ▼
  CI (ci.yml): lint+unit · integration · e2e · scope  ──► required check `ci`
- agent-review.yml: Claude reviews cursor/* and human PRs · Cursor reviews claude/* and human PRs
+ agent-review.yml: one reviewer per PR: Cursor for Claude's PRs · Claude for Cursor's and human PRs
                     ──► required check `review-gate`            then you merge
 ```
 
 The two builder workflows have separate concurrency groups and the queue gives each builder only its
 own issues, so Claude Code and Cursor build at the same time on different issues. Nobody reviews their
-own PR. Both reviewers run on human-written PRs.
+own PR. Each PR gets one reviewer (`tools/pick_reviewer.py`); Claude reviews human PRs.
 
 ## Test layers
 
@@ -63,7 +63,14 @@ label on an issue, or `workflow_dispatch`.
 ## Requesting cross-review
 
 Automatic: when a PR is opened, reopened or marked ready for review (and not a draft),
-`agent-review` adds `review:claude` and `review:cursor`, then both reviewers run if `ENABLE_AGENTS=true`.
+`agent-review` runs one reviewer if `ENABLE_AGENTS=true`, and labels the PR `review:claude` or
+`review:cursor` to show which. The PR's author is decided by the first of these that gives one answer:
+
+1. Builder branch prefix: `claude/` or `cursor/`.
+2. The marker the agent's tool leaves in the PR body (Cursor's hidden comment, Claude Code's footer).
+3. The agent that wrote or co-wrote the most commits.
+
+The other agent reviews. A human PR or an even mix goes to Claude (`DEFAULT_REVIEWER`).
 
 Manual re-run (same requirements as automatic):
 
@@ -76,15 +83,15 @@ Manual re-run (same requirements as automatic):
 
 Outcome labels: `review:pass` or `review:changes` (set by `review-gate`).
 
-If `claude-review` and `cursor-review` are **skipped** while `review-gate` is green, the repo
-variable `ENABLE_AGENTS` is not `true`. Set it only after `CLAUDE_CODE_OAUTH_TOKEN`, `CURSOR_API_KEY`
+One of `claude-review` and `cursor-review` is always skipped. If **both** are skipped while
+`review-gate` is green on a ready PR, the repo variable `ENABLE_AGENTS` is not `true`. Set it only after `CLAUDE_CODE_OAUTH_TOKEN`, `CURSOR_API_KEY`
 and (for builders) `GH_PAT` are configured (table above).
 
 ## Smoke test (first time)
 
 1. Set the secrets. Do not set `ENABLE_AGENTS` yet.
 2. Open a PR from a `ci/` or `docs/` branch: `ci` runs, `review-gate` passes with a notice.
-3. Set `ENABLE_AGENTS=true`. Open a small human PR: both reviewers run and post reviews.
+3. Set `ENABLE_AGENTS=true`. Open a small human PR: Claude runs and posts a review.
 4. After E0-1, E1-1 and E1-2 are closed, run `build-claude` and `build-cursor` with `workflow_dispatch`.
 5. On the first real run, confirm `agent -p --force --trust`, `CURSOR_API_KEY`, and
    `claude-code-action@v1` inputs against current Cursor and Claude docs (see

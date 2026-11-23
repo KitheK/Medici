@@ -29,8 +29,10 @@ Do not confuse the two: code you write calls the model; you are not the model.
 ## Cross-review on pull requests
 
 Requires repo variable `ENABLE_AGENTS=true` plus reviewer secrets (`docs/github-setup.md`). Ready PRs
-get labels `review:claude` and `review:cursor`; Claude reviews `cursor/*` and human branches, Cursor
-reviews `claude/*` and human branches. Request again with label `review:request` or `review:rerequest`
+get one reviewer, chosen by `tools/pick_reviewer.py` from who made the PR (builder branch, then PR body
+marker, then commit authors): Cursor reviews Claude's PRs; Claude reviews Cursor's, human and evenly
+mixed PRs. The label `review:claude` or `review:cursor` shows the choice. Request again with label
+`review:request` or `review:rerequest`
 (removed when the run starts), PR comment `/review` or `/rereview` (write access), or the
 **agent-review** workflow dispatch. Re-review uses the full diff and prioritises earlier comments.
 

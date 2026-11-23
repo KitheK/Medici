@@ -9,7 +9,8 @@ Issue ID (as in `issue_map.json`):
 ## Agent cross-review
 
 When `ENABLE_AGENTS=true` (see `docs/github-setup.md`), opening a ready (non-draft) PR adds
-`review:claude` and `review:cursor` and both agents review automatically. To run again:
+`review:claude` or `review:cursor`, and that agent (the one that did not make the PR) reviews it.
+To run again:
 
 - Add label `review:request` or `review:rerequest` (re-review reads the full diff and prior comments)
 - Comment `/review` or `/rereview` on the PR (needs write access)
