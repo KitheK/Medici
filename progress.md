@@ -29,3 +29,11 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
 - Fixed builder workflows to target the repo default branch (`setup/phase-0`), not `main`.
 - CI and issue-sync push triggers include `setup/phase-0`; Cursor `agent` uses `--trust` in Actions.
 - `pr-hygiene` allows `Agent/` branches (Cursor Cloud Agent integration PRs).
+
+## 2026-11-23: PR review request labels and controls
+
+- Extended `agent-review.yml`: `prepare` job, auto `review:claude` / `review:cursor` on ready PRs,
+  trigger labels `review:request` / `review:rerequest`, `/review` and `/rereview` comments,
+  `workflow_dispatch`, and re-review context via `prior-review-comments.md`.
+- New labels in `.github/labels.json`; documented in `AGENTS.md`, `docs/github-setup.md`, PR template.
+- PRs #52/#54 skipped reviewers because `ENABLE_AGENTS` is not `true` (not a workflow bug).

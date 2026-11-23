@@ -150,6 +150,26 @@
     "description": "Cross-review requested changes"
   },
   {
+    "name": "review:claude",
+    "color": "1d76db",
+    "description": "Claude cross-review eligible"
+  },
+  {
+    "name": "review:cursor",
+    "color": "1d76db",
+    "description": "Cursor cross-review eligible"
+  },
+  {
+    "name": "review:request",
+    "color": "fef2c0",
+    "description": "Run agent cross-review (label is removed when the run starts)"
+  },
+  {
+    "name": "review:rerequest",
+    "color": "fef2c0",
+    "description": "Re-run agent cross-review on the full diff (label removed when the run starts)"
+  },
+  {
     "name": "needs-human",
     "color": "000000",
     "description": "Needs a person's judgement"

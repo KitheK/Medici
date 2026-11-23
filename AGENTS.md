@@ -26,6 +26,14 @@ Do not confuse the two: code you write calls the model; you are not the model.
 | Install commit hook (co-author trailer) | `make hooks` |
 | Sync GitHub issues from the map | `python3 -m tools.sync_github` (also runs in CI on merge to main) |
 
+## Cross-review on pull requests
+
+Requires repo variable `ENABLE_AGENTS=true` plus reviewer secrets (`docs/github-setup.md`). Ready PRs
+get labels `review:claude` and `review:cursor`; Claude reviews `cursor/*` and human branches, Cursor
+reviews `claude/*` and human branches. Request again with label `review:request` or `review:rerequest`
+(removed when the run starts), PR comment `/review` or `/rereview` (write access), or the
+**agent-review** workflow dispatch. Re-review uses the full diff and prioritises earlier comments.
+
 ## Session workflow (one issue per session)
 
 1. Run `bash init.sh`. If it fails, fix that before anything else.
