@@ -1,5 +1,5 @@
-# Cross-review. Claude reviews what Cursor and humans wrote; Cursor reviews what Claude and humans
-# wrote. A builder never reviews its own PR. Both reviewers run in parallel on human PRs.
+# Cross-review. One reviewer is designated per PR, from who made it (tools/pick_reviewer.py): Cursor
+# reviews what Claude made; Claude reviews what Cursor made, and human or evenly mixed PRs.
 # Reviewers are read-only: they get the PR as plain files and write only review.md and verdict.txt;
 # this workflow posts the review. `review-gate` is the second required status check.
 #
@@ -155,11 +155,13 @@ jobs:
             if [ "$HEAD_REPO" != "$REPO" ]; then
               echo "::notice::Fork PR; agent reviewers do not run (no secrets on untrusted heads)."
             else
-              case "$HEAD_REF" in
-                claude/*) run_claude=false; run_cursor=true ;;
-                cursor/*) run_claude=true; run_cursor=false ;;
-                *) run_claude=true; run_cursor=true ;;
+              reviewer=$(gh pr view "$pr" --json headRefName,body,commits | python3 -m tools.pick_reviewer)
+              case "$reviewer" in
+                claude) run_claude=true; other=cursor ;;
+                cursor) run_cursor=true; other=claude ;;
+                *) echo "::error::No reviewer designated (got '$reviewer')"; exit 1 ;;
               esac
+              gh pr edit "$pr" --add-label "review:$reviewer" --remove-label "review:$other" || true
             fi
           elif $want && ! $enabled; then
             echo "::notice::ENABLE_AGENTS is not true — reviewers stay off; review-gate passes without them."
@@ -174,16 +176,10 @@ jobs:
           fi
 
           if $want && $enabled && [ "$EVENT" = "pull_request" ]; then
-            case "$PR_ACTION" in
-              opened|reopened|ready_for_review)
-                gh pr edit "$pr" --add-label review:cursor --add-label review:claude || true
-                ;;
-            esac
             if [ "$PR_ACTION" = "labeled" ]; then
               case "$LABEL_ADDED" in
                 review:request|review:rerequest)
                   gh pr edit "$pr" --remove-label "$LABEL_ADDED" || true
-                  gh pr edit "$pr" --add-label review:cursor --add-label review:claude || true
                   ;;
               esac
             fi
@@ -290,9 +286,9 @@ jobs:
           echo "Cursor verdict: $v"
           [ "$v" = "PASS" ] || { echo "::error::Cursor requested changes (verdict $v)"; exit 1; }
 
-  # Required status check. Passes when at least one reviewer ran and none objected.
+  # Required status check. Passes when the designated reviewer ran and did not object.
   review-gate:
-    if: always() && needs.prepare.result == 'success'
+    if: always()
     needs: [prepare, claude-review, cursor-review]
     runs-on: ubuntu-latest
     env:
@@ -300,12 +296,16 @@ jobs:
       PR: ${{ needs.prepare.outputs.pr }}
       ENABLED: ${{ needs.prepare.outputs.enabled }}
       GATE: ${{ needs.prepare.outputs.gate }}
+      PREPARE: ${{ needs.prepare.result }}
       CLAUDE: ${{ needs.claude-review.result }}
       CURSOR: ${{ needs.cursor-review.result }}
     steps:
       - name: Decide
         run: |
           echo "claude=$CLAUDE cursor=$CURSOR enabled=$ENABLED gate=$GATE"
+          if [ "$PREPARE" != success ]; then
+            echo "::error::Could not designate a reviewer (prepare: $PREPARE)."; exit 1
+          fi
           if [ "$GATE" = "off" ]; then
             echo "::notice::Agent review is switched off (ENABLE_AGENTS); gate passes without it."; exit 0
           fi
@@ -320,6 +320,6 @@ jobs:
             echo "::error::A reviewer requested changes or failed."; exit 1
           fi
           if [ "$CLAUDE" != success ] && [ "$CURSOR" != success ]; then
-            echo "::error::No reviewer ran."; exit 1
+            echo "::error::The designated reviewer did not run."; exit 1
           fi
           gh pr edit "$PR" --add-label review:pass --remove-label review:changes || true

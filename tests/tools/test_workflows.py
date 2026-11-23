@@ -66,6 +66,22 @@ def test_nobody_reviews_their_own_pull_request():
     assert set(wf["jobs"]["review-gate"]["needs"]) == {"prepare", "claude-review", "cursor-review"}
 
 
+def test_one_reviewer_is_designated_per_pull_request():
+    text = (WF / "agent-review.yml").read_text(encoding="utf-8")
+    assert "python3 -m tools.pick_reviewer" in text
+    # no line may switch both reviewers on, and the other agent's label is dropped
+    assert not re.search(r"run_claude=true;?\s*run_cursor=true", text)
+    assert not re.search(r"--add-label review:cursor --add-label review:claude", text)
+
+
+def test_gate_fails_when_no_reviewer_could_be_designated():
+    gate = load("agent-review.yml")["jobs"]["review-gate"]
+    assert gate["if"] == "always()"  # a skipped required check counts as passing
+    step = gate["steps"][0]
+    assert (gate["env"] | step.get("env", {}))["PREPARE"] == "${{ needs.prepare.result }}"
+    assert '[ "$PREPARE" != success ]' in step["run"]
+
+
 def test_reviewers_are_read_only_and_share_one_rubric():
     text = (WF / "agent-review.yml").read_text()
     assert text.count(".github/review-prompt.md") >= 2

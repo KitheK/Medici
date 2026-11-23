@@ -37,3 +37,10 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
   `workflow_dispatch`, and re-review context via `prior-review-comments.md`.
 - New labels in `.github/labels.json`; documented in `AGENTS.md`, `docs/github-setup.md`, PR template.
 - PRs #52/#54 skipped reviewers because `ENABLE_AGENTS` is not `true` (not a workflow bug).
+
+## 2026-11-23: One designated reviewer per PR
+
+- `agent-review` picks one reviewer from who made the PR (`tools/pick_reviewer.py`) instead of running
+  both. Branch prefix alone missed Cursor PRs on `issue/*` branches.
+- `review-gate` fails if no reviewer could be designated (it was skipped, which counts as passing).
+- Not yet run on GitHub: open PRs use the new rule only after their base contains this change.
