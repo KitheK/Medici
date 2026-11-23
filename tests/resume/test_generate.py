@@ -20,7 +20,7 @@ HOSTILE_POSTING = (
 def test_generate_schema_valid_on_sample_fact_sets(facts):
     """Each of ten fact sets yields validator-clean resume JSON."""
     baseline = facts_to_resume_document(facts)
-    client = FakeModelClient(responses=[baseline.to_dict()])
+    client = FakeModelClient(responses=[baseline.to_dict(), baseline.to_dict()])
     doc = generate_resume(facts, client)
     validate_resume(doc, facts)
     assert isinstance(doc, ResumeDocument)

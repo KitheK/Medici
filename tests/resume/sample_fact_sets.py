@@ -151,7 +151,6 @@ SAMPLE_FACT_SETS: tuple[UserFacts, ...] = (
     ),
     UserFacts(
         employers=(
-            EmployerFact(name="Tessera Works", title="ML Engineer", start="2019", end="2021"),
             EmployerFact(name="Tessera Works", title="Staff ML", start="2021", end="Present"),
         ),
         schools=(
