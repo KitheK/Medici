@@ -694,7 +694,7 @@
       ],
       "status": "done",
       "passes": true,
-      "notes": "Owner skipped open human gates. Tests use FakeModelClient only; generate_resume re-validates with E5-1 validator and retries once on ValidationError."
+      "notes": "Owner skipped open human gates. Tests use FakeModelClient only; generate_resume retries malformed JSON and ValidationError once. Interim bullet tool/metric checks live in prompt/bullets.py until E5-1 bullet rules fully align."
     },
     {
       "id": "E5-3",
