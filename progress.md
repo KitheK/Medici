@@ -37,3 +37,12 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
   `workflow_dispatch`, and re-review context via `prior-review-comments.md`.
 - New labels in `.github/labels.json`; documented in `AGENTS.md`, `docs/github-setup.md`, PR template.
 - PRs #52/#54 skipped reviewers because `ENABLE_AGENTS` is not `true` (not a workflow bug).
+
+## 2026-11-23: E5-1 Resume schema and validator
+
+- Added `src/medici/resume/schema/` (`facts.py`, `validate.py`): typed user facts,
+  `ResumeDocument` JSON schema, and strict validator for employers, schools, dates, tools,
+  and project names.
+- Added `tests/resume/` with fabrication tests and a privacy-marked posting-injection test.
+- Owner skipped the E0-1 gate; E2-1 was not needed for this issue (no model client).
+- Next: E5-2 resume prompt/model call once E2-1 lands; E5-3 LaTeX render.
