@@ -24,6 +24,11 @@ bash init.sh                # health check at the start of every session
 python3 tools/issue_map.py complete E2-3   # only this sets `passes`
 ```
 
+## Where things live
+
+`docs/architecture.md` maps each area to its folder and issues. Each folder has an `AGENTS.md` guide.
+GitHub issues are generated from `issue_map.json` by `python3 -m tools.sync_github`.
+
 ## Ground rules
 
 Public pages only, no LinkedIn scraping, no auto-sending, at most 3 people per job, 30-day expiry

@@ -1,0 +1,25 @@
+name: pr-hygiene
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Branch name names an issue (or is setup/docs/chore)
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          echo "$BRANCH" | grep -Eq '^(issue/[HE][0-9]+-[0-9]+.*|setup/.+|docs/.+|chore/.+)$' || {
+            echo "Branch '$BRANCH' must look like issue/E2-3, setup/..., docs/... or chore/..."; exit 1; }
+      - name: Issue branches link their issue
+        if: startsWith(github.head_ref, 'issue/')
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          echo "$BODY" | grep -Eiq '(closes|fixes|resolves) #[0-9]+' || {
+            echo "PR body must say 'Closes #<issue number>'"; exit 1; }

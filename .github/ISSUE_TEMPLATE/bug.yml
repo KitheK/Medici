@@ -1,0 +1,14 @@
+name: Bug
+description: Something broke or a privacy rule is not enforced
+labels: ["bug"]
+assignees: ["KitheK"]
+body:
+  - type: textarea
+    id: what
+    attributes: {label: What happened, description: "Do not paste real names or emails"}
+    validations: {required: true}
+  - type: dropdown
+    id: privacy
+    attributes:
+      label: Does this affect a privacy rule?
+      options: ["No", "Yes (label safety:privacy)"]

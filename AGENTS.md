@@ -2,7 +2,9 @@
 
 Medici turns one job posting into a sourced outreach plan: one suspected recruiter, two team
 members, a labelled unverified email-format guess, and a one-page Jake's-format resume built only
-from the user's own facts. Read `docs/build-plan.md` for the plan and `progress.md` for where we are.
+from the user's own facts. Read `docs/build-plan.md` for the plan, `docs/architecture.md` for where each part lives, and
+`progress.md` for where we are. Every source folder has its own `AGENTS.md` saying what to produce
+there; read it before writing code in that folder.
 
 The runtime model is Claude Haiku 5.5 (`claude-haiku-5-5`). Builders are Claude Code and Cursor.
 Do not confuse the two: code you write calls the model; you are not the model.
@@ -20,6 +22,8 @@ Do not confuse the two: code you write calls the model; you are not the model.
 | Close an issue | `python3 tools/issue_map.py complete <ID>` |
 | Fixture sites | `make serve-fixtures` (http://127.0.0.1:8765) |
 | Start-of-session check | `bash init.sh` |
+| Install commit hook (co-author trailer) | `make hooks` |
+| Sync GitHub issues from the map | `python3 -m tools.sync_github` (also runs in CI on merge to main) |
 
 ## Session workflow (one issue per session)
 
@@ -59,7 +63,8 @@ Do not confuse the two: code you write calls the model; you are not the model.
   adding a dependency.
 - Tests live in `tests/<area>/`, mirroring `src/medici/<area>/`.
 - Fixtures use invented names and the reserved domains `example.test` and `example.invalid`.
-- Small commits, imperative messages. One issue per PR.
+- Small commits, imperative messages. One issue per PR. Run `make hooks` once per clone/worktree:
+  every commit then ends with `Co-authored-by: Kithe Kisia <63513739+KitheK@users.noreply.github.com>`.
 
 ## Never
 
