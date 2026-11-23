@@ -6,8 +6,18 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from medici.store import suppression
+
 UNSAVED_RETENTION_DAYS = 30
 SAVED_RETENTION_DAYS = 180
+
+
+class SuppressedContactError(Exception):
+    """Raised when saving a contact whose identifier is on the suppression list."""
+
+
+def _current_time() -> datetime:
+    return datetime.now(UTC)
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,7 +56,13 @@ def save_contact(
     excerpt: str,
     saved: bool,
     now: datetime,
+    identifier: str | None = None,
+    suppression_key: bytes | None = None,
 ) -> int:
+    if identifier is not None and suppression.is_suppressed(
+        conn, identifier, key=suppression_key
+    ):
+        raise SuppressedContactError("identifier is suppressed")
     expires = expires_at_for(saved=saved, now=now)
     created = _iso(now)
     cur = conn.execute(
@@ -81,11 +97,9 @@ def get_contact(conn: sqlite3.Connection, contact_id: int) -> StoredContact | No
 
 
 def list_contacts(conn: sqlite3.Connection, *, now: datetime | None = None) -> list[StoredContact]:
-    if now is None:
-        rows = conn.execute("SELECT * FROM contacts ORDER BY id").fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT * FROM contacts WHERE expires_at > ? ORDER BY id",
-            (_iso(now),),
-        ).fetchall()
+    cutoff = _current_time() if now is None else now
+    rows = conn.execute(
+        "SELECT * FROM contacts WHERE expires_at > ? ORDER BY id",
+        (_iso(cutoff),),
+    ).fetchall()
     return [_row_to_contact(r) for r in rows]
