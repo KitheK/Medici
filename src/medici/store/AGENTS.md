@@ -16,7 +16,9 @@ Persist contacts with retention built in. SQLite first, Postgres at E8-1.
 
 ## Rules for this area
 
-- Suppression stores only an HMAC (key from the environment). Never the raw name or email.
+- Suppression stores only an HMAC (key from the environment, at least 32 bytes; no default).
+  Never the raw name or email. Canonicalise emails and URLs before hashing; the store only
+  strips and lower-cases the string it receives.
 - Expiry is code, tested with a fake clock.
 - No contact row without an `expires_at`.
 

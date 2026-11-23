@@ -8,7 +8,7 @@ import pytest
 
 from medici.store.db import connect, init_schema
 
-TEST_SUPPRESSION_KEY = "test-only-suppression-key"
+TEST_SUPPRESSION_KEY = "test-only-suppression-key-32-bytes-min!!"
 
 
 @pytest.fixture

@@ -1,4 +1,9 @@
-"""Opt-out table: HMAC of identifier only, never the raw value."""
+"""Opt-out table: HMAC of identifier only, never the raw value.
+
+Callers must canonicalise identifiers (emails, URLs) before hashing or suppression
+checks. This module only applies ``strip()`` and case-folding (``lower()``) on the
+string it receives; it does not parse or normalise email domains or URL schemes.
+"""
 
 from __future__ import annotations
 
@@ -9,6 +14,7 @@ import sqlite3
 from datetime import UTC, datetime
 
 SUPPRESSION_KEY_ENV = "MEDICI_SUPPRESSION_KEY"
+MIN_SUPPRESSION_KEY_BYTES = 32
 
 
 def suppression_key_from_env() -> bytes:
@@ -16,7 +22,14 @@ def suppression_key_from_env() -> bytes:
     if not raw:
         msg = f"{SUPPRESSION_KEY_ENV} must be set for suppression operations"
         raise RuntimeError(msg)
-    return raw.encode("utf-8")
+    key = raw.encode("utf-8")
+    if len(key) < MIN_SUPPRESSION_KEY_BYTES:
+        msg = (
+            f"{SUPPRESSION_KEY_ENV} must be at least {MIN_SUPPRESSION_KEY_BYTES} bytes; "
+            "refusing a guessable default"
+        )
+        raise RuntimeError(msg)
+    return key
 
 
 def identifier_hmac(identifier: str, key: bytes) -> str:

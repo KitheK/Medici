@@ -25,6 +25,18 @@ def test_is_suppressed_matches_after_add(db_conn, suppression_key):
     assert suppression.is_suppressed(db_conn, IDENTIFIER, key=suppression_key)
 
 
+def test_suppression_key_from_env_missing(monkeypatch):
+    monkeypatch.delenv("MEDICI_SUPPRESSION_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="MEDICI_SUPPRESSION_KEY"):
+        suppression.suppression_key_from_env()
+
+
+def test_suppression_key_from_env_too_short(monkeypatch):
+    monkeypatch.setenv("MEDICI_SUPPRESSION_KEY", "short-key")
+    with pytest.raises(RuntimeError, match="at least"):
+        suppression.suppression_key_from_env()
+
+
 def test_different_identifiers_get_different_hmacs(suppression_key):
     a = suppression.identifier_hmac("pat.one@example.test", suppression_key)
     b = suppression.identifier_hmac("pat.two@example.test", suppression_key)
