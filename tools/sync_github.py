@@ -19,9 +19,10 @@ from tools.issue_map import DEFAULT_MAP, by_id, load
 ROOT = Path(__file__).resolve().parent.parent
 ASSIGNEE = "KitheK"
 EPICS = {
-    "H0": "Setup", "E0": "Decisions", "E1": "Feasibility spike", "E2": "Walking skeleton",
-    "E3": "People lane", "E4": "Email step", "E5": "Resume engine", "E6": "Saved network",
-    "E7": "Review screen", "E8": "Launch checks", "E9": "Batch runner",
+    "H0": "Setup", "H1": "CI and agent workflows", "E0": "Decisions",
+    "E1": "Feasibility spike", "E2": "Walking skeleton", "E3": "People lane", "E4": "Email step",
+    "E5": "Resume engine", "E6": "Saved network", "E7": "Review screen",
+    "E8": "Launch checks", "E9": "Batch runner",
 }
 GUIDED_ROOTS = ("src/medici/", "web/src/", "templates/", "migrations/")
 MARKER = "<!-- medici-issue-id: {id} -->"

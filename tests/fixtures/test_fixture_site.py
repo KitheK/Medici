@@ -8,6 +8,8 @@ import pytest
 
 from fixtures.serve import SITE, start_in_thread
 
+pytestmark = pytest.mark.integration
+
 NAMES = json.loads((Path(__file__).parents[2] / "fixtures" / "names.json").read_text())
 
 

@@ -1,0 +1,45 @@
+name: pick-issue
+description: Ask the queue for this builder's next issue and find its GitHub issue number.
+inputs:
+  owner:
+    description: Builder lane, claude-code or cursor
+    required: true
+  issue:
+    description: Optional issue ID to force (label-triggered runs)
+    required: false
+    default: ""
+  github-token:
+    required: true
+outputs:
+  id:
+    description: Issue ID such as E2-3 (empty when the lane has no work)
+    value: ${{ steps.pick.outputs.id }}
+  number:
+    description: GitHub issue number
+    value: ${{ steps.pick.outputs.number }}
+runs:
+  using: composite
+  steps:
+    - id: pick
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        OWNER: ${{ inputs.owner }}
+        FORCE: ${{ inputs.issue }}
+      run: |
+        set -euo pipefail
+        # IDs that already have an open PR, whichever builder opened it.
+        busy=$(gh pr list --state open --limit 100 --json headRefName --jq '.[].headRefName' \
+          | grep -oE '[HE][0-9]+-[0-9]+' | sort -u | paste -sd, - || true)
+        args=(--owner "$OWNER" --busy "$busy")
+        [ -n "$FORCE" ] && args+=(--issue "$FORCE")
+        if id=$(python3 -m tools.queue pick "${args[@]}"); then
+          number=$(gh issue list --state open --limit 200 --json number,title \
+            --jq ".[] | select(.title | startswith(\"[$id]\")) | .number" | head -n1)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "Picked $id (#$number) for $OWNER"
+        else
+          echo "id=" >> "$GITHUB_OUTPUT"
+          echo "No ready issue for $OWNER"
+        fi
