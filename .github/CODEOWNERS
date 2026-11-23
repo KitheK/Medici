@@ -1,1 +1,11 @@
-* @KitheK
+# Last matching pattern wins. Add a second reviewer's handle beside @KitheK to require two people.
+*                         @KitheK
+/.github/                 @KitheK
+/tools/                   @KitheK
+/tests/privacy/           @KitheK
+/src/medici/fetch/        @KitheK
+/src/medici/store/        @KitheK
+/src/medici/optout/       @KitheK
+/src/medici/email/        @KitheK
+/src/medici/logging/      @KitheK
+/web/                     @KitheK

@@ -24,6 +24,12 @@ bash init.sh                # health check at the start of every session
 python3 tools/issue_map.py complete E2-3   # only this sets `passes`
 ```
 
+## CI, builders and reviewers
+
+Claude Code and Cursor build different issues at the same time and review each other's PRs.
+Setup, secrets, the queue and the test layers are in `docs/github-setup.md`; manual testing is in
+`docs/manual-testing.md`.
+
 ## Where things live
 
 `docs/architecture.md` maps each area to its folder and issues. Each folder has an `AGENTS.md` guide.
