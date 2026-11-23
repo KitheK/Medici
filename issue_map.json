@@ -341,7 +341,7 @@
       ],
       "status": "done",
       "passes": true,
-      "notes": "Built while E1-2 gate is open per owner. Assumes Anthropic Messages API json_schema output_format for claude-haiku-5-5; local gateway POST /v1/complete with {prompt, schema} -> message.content JSON text (MEDICI_LOCAL_MODEL_URL)."
+      "notes": "Built while E1-2 gate is open per owner. Anthropic uses GA output_config.format json_schema (structured-outputs doc); local gateway POST /v1/complete with {prompt, schema} -> message.content. Callers still wrap untrusted text in <untrusted_data> (centralize in a later issue if wanted)."
     },
     {
       "id": "E2-2",
