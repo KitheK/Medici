@@ -6,7 +6,7 @@ import json
 import sqlite3
 from dataclasses import dataclass
 
-from medici.optout.service import opt_out
+from medici.optout.service import canonicalize_identifier, opt_out
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +33,7 @@ def parse_opt_out_body(raw: bytes) -> OptOutRequest:
     if not isinstance(identifier, str) or not identifier.strip():
         msg = "identifier is required"
         raise ValueError(msg)
-    return OptOutRequest(identifier=identifier)
+    return OptOutRequest(identifier=canonicalize_identifier(identifier))
 
 
 def handle_opt_out(
