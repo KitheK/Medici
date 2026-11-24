@@ -132,6 +132,62 @@ def test_redirect_hop_rate_limit_applied_per_host():
     assert "a.example.test" in hosts_waited and "b.example.test" in hosts_waited
 
 
+def test_robots_and_page_requests_rate_limited_on_same_host():
+    """robots.txt GET must go through the per-host limiter before the page GET."""
+    clock = [0.0]
+    slept: list[float] = []
+    seen: list[tuple[str, float]] = []
+
+    def fake_clock() -> float:
+        return clock[0]
+
+    def fake_sleep(seconds: float) -> None:
+        slept.append(seconds)
+        clock[0] += seconds
+
+    def fake_urlopen(req, timeout=0):  # noqa: ARG001
+        seen.append((req.full_url, clock[0]))
+        if req.full_url.endswith("/robots.txt"):
+            return _html_response(b"User-agent: *\nAllow: /", url=req.full_url)
+        return _html_response(b"<html><body><p>ok</p></body></html>", url=req.full_url)
+
+    fetcher = Fetcher(
+        company_hosts=frozenset({"cold.example.test"}),
+        clock=fake_clock,
+        sleep=fake_sleep,
+        urlopen_fn=fake_urlopen,
+    )
+    result = fetcher.get("https://cold.example.test/page")
+    assert isinstance(result, Page)
+    robots = [t for url, t in seen if url.endswith("/robots.txt")]
+    pages = [t for url, t in seen if not url.endswith("/robots.txt")]
+    assert len(robots) == 1 and len(pages) == 1
+    assert slept == [1.0]
+    assert pages[0] - robots[0] >= 1.0
+
+
+def test_robots_txt_redirect_not_followed_off_allowlist():
+    def fake_urlopen(req, timeout=0):  # noqa: ARG001
+        if req.full_url == "https://trap.example.test/robots.txt":
+            raise HTTPError(
+                req.full_url,
+                302,
+                "Found",
+                {"Location": "https://evil.example.invalid/robots.txt"},
+                None,
+            )
+        if "evil.example.invalid" in req.full_url:
+            raise AssertionError("must not follow robots redirect off the request host")
+        raise AssertionError(req.full_url)
+
+    fetcher = Fetcher(
+        company_hosts=frozenset({"trap.example.test"}),
+        urlopen_fn=fake_urlopen,
+    )
+    result = fetcher.get("https://trap.example.test/page")
+    assert isinstance(result, Skipped)
+
+
 def test_robots_txt_5xx_disallows_fetch():
     def fake_urlopen(req, timeout=0):  # noqa: ARG001
         if req.full_url.endswith("/robots.txt"):

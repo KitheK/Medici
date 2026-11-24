@@ -86,6 +86,9 @@ class Fetcher:
             return _no_redirect_opener().open(req, timeout=timeout)
         return self._urlopen(req, timeout=timeout)
 
+    def _robots_urlopen(self, req: Request, timeout: int = 15):
+        return self._open(req, timeout=timeout)
+
     def get(self, url: str) -> Page | Skipped:
         """Fetch a URL when allowed, or return Skipped when robots rules block it."""
         current = url
@@ -95,7 +98,11 @@ class Fetcher:
                 company_hosts=self._company_hosts,
                 allow_fixture_hosts=self._allow_fixture_hosts,
             )
-            if not self._robots.can_fetch(current, urlopen_fn=self._urlopen):
+            if not self._robots.can_fetch(
+                current,
+                urlopen_fn=self._robots_urlopen,
+                before_fetch=self._limiter.wait,
+            ):
                 return Skipped(reason="robots", url=current)
             host = urlparse(current).netloc
             self._limiter.wait(host)
