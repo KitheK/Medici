@@ -353,7 +353,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "size:M"
       ],
@@ -366,9 +366,9 @@
         "$ pytest tests/posting -q",
         "Extracts company, domain, title, team text and named contact on 10 fixture postings"
       ],
-      "status": "todo",
+      "status": "in_progress",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E2-3",
@@ -393,9 +393,9 @@
         "$ pytest tests/fetch -q",
         "Skips robots-blocked paths, rejects off-allowlist URLs, limits to 1 request per second per host, converts HTML to Markdown"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "E1-2 human gate skipped per owner. Allowlist: *.example.test, *.example.invalid, optional allow_fixture_hosts for 127.0.0.1/localhost in tests, plus per-job company_hosts (E2-2). PR #53 review: redirect hop revalidation, robots 4xx vs 5xx/network, 2MB body cap, void-element tag stack."
     },
     {
       "id": "E2-4",
@@ -404,10 +404,11 @@
       "depends_on": [
         "E2-1",
         "E2-3",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -420,9 +421,9 @@
         "$ pytest tests/contacts -q",
         "Returns contacts with excerpts; rejects a planted name absent from the page text"
       ],
-      "status": "todo",
+      "status": "in_progress",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E2-5",
@@ -463,7 +464,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "size:S"
       ],
@@ -477,7 +478,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E3-1",
@@ -489,7 +490,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -504,7 +505,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E3-2",
@@ -515,7 +516,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -530,7 +531,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E3-3",
@@ -542,7 +543,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -557,7 +558,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E3-4",
@@ -571,7 +572,7 @@
         "E1-1",
         "E1-2"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -597,7 +598,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:M"
@@ -612,7 +613,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E4-2",
@@ -623,7 +624,7 @@
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:privacy",
         "size:S"
@@ -638,7 +639,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E5-1",
@@ -663,9 +664,9 @@
         "$ pytest tests/resume -q",
         "Validator rejects any employer, school, date or tool not in the user's facts"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "Owner skipped unfinished E0-1 gate for this session. E2-1 (model client) not required here\u2014schema/validator are pure Python with dict round-trips for E5-2. Resume JSON shape: education, experience, skills, optional projects; dates split on --/\u2013/-/\\bto\\b. Validator is per-entry (dates/titles/degrees/project tools) and scans bullets for tools/numbers absent from user facts."
     },
     {
       "id": "E5-2",
@@ -673,10 +674,13 @@
       "epic": "E5",
       "depends_on": [
         "E5-1",
+        "E0-1",
+        "E1-1",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "size:M"
       ],
@@ -688,9 +692,9 @@
         "$ pytest tests/resume -q",
         "Schema-valid JSON on 10 sample fact sets; an injected posting leaves output unchanged"
       ],
-      "status": "todo",
+      "status": "in_progress",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E5-3",
@@ -698,25 +702,29 @@
       "epic": "E5",
       "depends_on": [
         "E5-1",
+        "E0-1",
+        "E1-1",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "size:M"
       ],
       "files_allowed": [
         "src/medici/resume/render/**",
         "tests/resume/**",
-        "templates/**"
+        "templates/**",
+        ".github/workflows/ci.yml"
       ],
       "acceptance": [
         "$ pytest tests/resume -q",
         "Fills Jake's template macros and escapes & % $ # _ { } ~ ^ \\\\"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "Stacked on issue/E5-1 (PR #54). Owner skipped human gates. No resume heading/contact until a later issue adds fields to ResumeDocument. CI scope: stacked PRs set github.base_ref to setup/phase-0; scope job uses pull_request.base.ref (one-line ci.yml, see PR discussion)."
     },
     {
       "id": "E5-4",
@@ -724,10 +732,13 @@
       "epic": "E5",
       "depends_on": [
         "E5-3",
+        "E0-1",
+        "E1-1",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
-      "owner": "claude-code",
+      "owner": "cursor",
       "labels": [
         "safety:sandbox",
         "size:M"
@@ -742,7 +753,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": ""
+      "notes": "Claimed by Cursor for week of 2026-11-22"
     },
     {
       "id": "E5-5",
