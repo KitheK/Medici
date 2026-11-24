@@ -21,6 +21,10 @@ permissions:
   issues: write
   id-token: write
 
+env:
+  # Named one by one: this repo is public and allowed bots are not checked for write access.
+  TRUSTED_BOTS: "cursor[bot],claude[bot]"
+
 concurrency:
   group: build-claude
   cancel-in-progress: false
@@ -66,6 +70,7 @@ jobs:
         if: steps.pick.outputs.id != ''
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: ${{ env.TRUSTED_BOTS }}
           claude_args: >-
             --max-turns 60
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(python3:*),Bash(pytest:*),Bash(ruff:*),Bash(make:*),Bash(git:*),Bash(gh pr create:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(ls:*),Bash(cat:*),Bash(mkdir:*)"

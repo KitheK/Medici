@@ -36,6 +36,11 @@ mixed PRs. The label `review:claude` or `review:cursor` shows the choice. Reques
 (removed when the run starts), PR comment `/review` or `/rereview` (write access), or the
 **agent-review** workflow dispatch. Re-review uses the full diff and prioritises earlier comments.
 
+## Merge conflicts
+
+Comment `/fix-conflicts` on a PR to have its own agent resolve them; the workflow tests, pushes and
+comments what was fixed (`docs/github-setup.md`). Protected files are left to a human.
+
 ## Session workflow (one issue per session)
 
 1. Run `bash init.sh`. If it fails, fix that before anything else.

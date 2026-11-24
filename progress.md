@@ -44,3 +44,11 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
   both. Branch prefix alone missed Cursor PRs on `issue/*` branches.
 - `review-gate` fails if no reviewer could be designated (it was skipped, which counts as passing).
 - Not yet run on GitHub: open PRs use the new rule only after their base contains this change.
+
+## 2026-11-24: Trusted bots and conflict fixes
+
+- Claude refused runs started by Cursor's bot (PRs 51 and 52). Named bots may now start the Claude
+  workflows and comment commands; only the first line of a comment has to be the command.
+- A comment that is not a command no longer cancels a running review.
+- Added `fix-conflicts.yml` and `tools/conflict_fix.py`: `/fix-conflicts`, a manual run, or an opt-in sweep.
+- Not yet run on GitHub: the conflict workflow only starts once it is on the default branch.
