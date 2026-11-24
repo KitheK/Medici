@@ -1,11 +1,12 @@
-# Cross-review. Claude reviews what Cursor and humans wrote; Cursor reviews what Claude and humans
-# wrote. A builder never reviews its own PR. Both reviewers run in parallel on human PRs.
+# Cross-review. One reviewer is designated per PR, from who made it (tools/pick_reviewer.py): Cursor
+# reviews what Claude made; Claude reviews what Cursor made, and human or evenly mixed PRs.
 # Reviewers are read-only: they get the PR as plain files and write only review.md and verdict.txt;
 # this workflow posts the review. `review-gate` is the second required status check.
 #
 # Manual controls (need ENABLE_AGENTS=true and reviewer secrets — see docs/github-setup.md):
 #   • Labels `review:request` / `review:rerequest` (removed when the run starts)
-#   • PR comment `/review` or `/rereview` from someone with write access
+#   • PR comment whose first line is `/review` or `/rereview`, from someone with write access or a
+#     bot in TRUSTED_BOTS
 #   • workflow_dispatch with pr_number (optional rereview: true)
 name: agent-review
 
@@ -32,8 +33,13 @@ permissions:
   issues: write
   id-token: write
 
+env:
+  # Named one by one: this repo is public and allowed bots are not checked for write access.
+  TRUSTED_BOTS: "cursor[bot],claude[bot]"
+
 concurrency:
-  group: review-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}
+  # Other comments get a group of their own, so a bot's comment cannot cancel a running review.
+  group: review-${{ github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, '/review') && !startsWith(github.event.comment.body, '/rereview') && github.run_id || github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
@@ -83,8 +89,9 @@ jobs:
             want=true
           elif [ "$EVENT" = "issue_comment" ]; then
             pr="$ISSUE_NUM"
-            body=$(printf '%s' "$COMMENT_BODY" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-            case "$body" in
+            first=${COMMENT_BODY%%$'\n'*}   # agents add a footer below the command
+            first=$(printf '%s' "$first" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            case "$first" in
               /review) ;;
               /rereview) rereview=true ;;
               *) echo "Comment is not a review command; skipping."; exit 0 ;;
@@ -92,14 +99,19 @@ jobs:
             if ! gh pr view "$pr" --json number --jq .number >/dev/null 2>&1; then
               echo "Issue is not a pull request; skipping."; exit 0
             fi
-            perm=$(gh api "repos/$REPO/collaborators/$COMMENT_USER/permission" --jq .permission 2>/dev/null || echo none)
-            case "$perm" in
-              admin|maintain|write) ;;
+            case ",$TRUSTED_BOTS," in
+              *",$COMMENT_USER,"*) ;;   # a bot has no collaborator permission to look up
               *)
-                if [ "$COMMENT_USER" != "$OWNER" ]; then
-                  gh pr comment "$pr" --body "Cross-review commands need write access on this repo."
-                  echo "Insufficient permission"; exit 0
-                fi
+                perm=$(gh api "repos/$REPO/collaborators/$COMMENT_USER/permission" --jq .permission 2>/dev/null || echo none)
+                case "$perm" in
+                  admin|maintain|write) ;;
+                  *)
+                    if [ "$COMMENT_USER" != "$OWNER" ]; then
+                      gh pr comment "$pr" --body "Cross-review commands need write access on this repo."
+                      echo "Insufficient permission"; exit 0
+                    fi
+                    ;;
+                esac
                 ;;
             esac
             want=true
@@ -155,11 +167,13 @@ jobs:
             if [ "$HEAD_REPO" != "$REPO" ]; then
               echo "::notice::Fork PR; agent reviewers do not run (no secrets on untrusted heads)."
             else
-              case "$HEAD_REF" in
-                claude/*) run_claude=false; run_cursor=true ;;
-                cursor/*) run_claude=true; run_cursor=false ;;
-                *) run_claude=true; run_cursor=true ;;
+              reviewer=$(gh pr view "$pr" --json headRefName,body,commits | python3 -m tools.pick_reviewer)
+              case "$reviewer" in
+                claude) run_claude=true; other=cursor ;;
+                cursor) run_cursor=true; other=claude ;;
+                *) echo "::error::No reviewer designated (got '$reviewer')"; exit 1 ;;
               esac
+              gh pr edit "$pr" --add-label "review:$reviewer" --remove-label "review:$other" || true
             fi
           elif $want && ! $enabled; then
             echo "::notice::ENABLE_AGENTS is not true — reviewers stay off; review-gate passes without them."
@@ -174,16 +188,10 @@ jobs:
           fi
 
           if $want && $enabled && [ "$EVENT" = "pull_request" ]; then
-            case "$PR_ACTION" in
-              opened|reopened|ready_for_review)
-                gh pr edit "$pr" --add-label review:cursor --add-label review:claude || true
-                ;;
-            esac
             if [ "$PR_ACTION" = "labeled" ]; then
               case "$LABEL_ADDED" in
                 review:request|review:rerequest)
                   gh pr edit "$pr" --remove-label "$LABEL_ADDED" || true
-                  gh pr edit "$pr" --add-label review:cursor --add-label review:claude || true
                   ;;
               esac
             fi
@@ -232,6 +240,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: ${{ env.TRUSTED_BOTS }}
           claude_args: >-
             --max-turns 30
             --allowedTools "Read,Glob,Grep,Write"
@@ -290,9 +299,9 @@ jobs:
           echo "Cursor verdict: $v"
           [ "$v" = "PASS" ] || { echo "::error::Cursor requested changes (verdict $v)"; exit 1; }
 
-  # Required status check. Passes when at least one reviewer ran and none objected.
+  # Required status check. Passes when the designated reviewer ran and did not object.
   review-gate:
-    if: always() && needs.prepare.result == 'success'
+    if: always()
     needs: [prepare, claude-review, cursor-review]
     runs-on: ubuntu-latest
     env:
@@ -300,12 +309,16 @@ jobs:
       PR: ${{ needs.prepare.outputs.pr }}
       ENABLED: ${{ needs.prepare.outputs.enabled }}
       GATE: ${{ needs.prepare.outputs.gate }}
+      PREPARE: ${{ needs.prepare.result }}
       CLAUDE: ${{ needs.claude-review.result }}
       CURSOR: ${{ needs.cursor-review.result }}
     steps:
       - name: Decide
         run: |
           echo "claude=$CLAUDE cursor=$CURSOR enabled=$ENABLED gate=$GATE"
+          if [ "$PREPARE" != success ]; then
+            echo "::error::Could not designate a reviewer (prepare: $PREPARE)."; exit 1
+          fi
           if [ "$GATE" = "off" ]; then
             echo "::notice::Agent review is switched off (ENABLE_AGENTS); gate passes without it."; exit 0
           fi
@@ -320,6 +333,6 @@ jobs:
             echo "::error::A reviewer requested changes or failed."; exit 1
           fi
           if [ "$CLAUDE" != success ] && [ "$CURSOR" != success ]; then
-            echo "::error::No reviewer ran."; exit 1
+            echo "::error::The designated reviewer did not run."; exit 1
           fi
           gh pr edit "$PR" --add-label review:pass --remove-label review:changes || true

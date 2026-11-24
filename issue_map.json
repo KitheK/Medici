@@ -339,9 +339,9 @@
         "$ pytest tests/model -q",
         "Returns schema-valid JSON from Haiku 5.5 and from a local model; bad output retried once, then raises"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "Built while E1-2 gate is open per owner. Anthropic uses GA output_config.format json_schema (structured-outputs doc); local gateway POST /v1/complete with {prompt, schema} -> message.content. Callers still wrap untrusted text in <untrusted_data> (centralize in a later issue if wanted)."
     },
     {
       "id": "E2-2",
@@ -349,6 +349,7 @@
       "epic": "E2",
       "depends_on": [
         "E2-1",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
@@ -392,9 +393,9 @@
         "$ pytest tests/fetch -q",
         "Skips robots-blocked paths, rejects off-allowlist URLs, limits to 1 request per second per host, converts HTML to Markdown"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "E1-2 human gate skipped per owner. Allowlist: *.example.test, *.example.invalid, optional allow_fixture_hosts for 127.0.0.1/localhost in tests, plus per-job company_hosts (E2-2). PR #53 review: redirect hop revalidation, robots 4xx vs 5xx/network, 2MB body cap, void-element tag stack."
     },
     {
       "id": "E2-4",
@@ -403,6 +404,7 @@
       "depends_on": [
         "E2-1",
         "E2-3",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
@@ -440,15 +442,16 @@
       ],
       "files_allowed": [
         "src/medici/store/**",
-        "tests/store/**"
+        "tests/store/**",
+        "progress/**"
       ],
       "acceptance": [
         "$ pytest tests/store -q",
         "Contacts carry expires_at; the job deletes expired rows; suppression stores an HMAC"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "E0-1 gate skipped per owner: retention uses AGENTS.md (30d unsaved, 180d saved from save time as stand-in until E6-2 re-verification). Suppression HMAC key from MEDICI_SUPPRESSION_KEY (vault in E8-1). Identifier normalized strip+lower before HMAC; save_contact requires identifier. E3-4 depends_on human gates so queue test passes without queue.py in this PR; H1-3 may still add picker filter for other epics. passes set by tools/issue_map.py complete."
     },
     {
       "id": "E2-6",
@@ -564,7 +567,10 @@
       "depends_on": [
         "E2-5",
         "H0-2",
-        "H0-3"
+        "H0-3",
+        "E0-1",
+        "E1-1",
+        "E1-2"
       ],
       "owner": "claude-code",
       "labels": [

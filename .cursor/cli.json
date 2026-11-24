@@ -4,7 +4,7 @@
       "Read(**)",
       "Write(src/**)", "Write(tests/**)", "Write(web/**)", "Write(docs/**)",
       "Write(templates/**)", "Write(migrations/**)", "Write(fixtures/**)",
-      "Write(progress.md)", "Write(issue_map.json)",
+      "Write(progress/**)", "Write(issue_map.json)",
       "Shell(python3)", "Shell(pytest)", "Shell(ruff)", "Shell(make)", "Shell(npm)", "Shell(npx)",
       "Shell(ls)", "Shell(cat)", "Shell(grep)"
     ],

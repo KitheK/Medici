@@ -3,7 +3,7 @@
 Medici turns one job posting into a sourced outreach plan: one suspected recruiter, two team
 members, a labelled unverified email-format guess, and a one-page Jake's-format resume built only
 from the user's own facts. Read `docs/build-plan.md` for the plan, `docs/architecture.md` for where each part lives, and
-`progress.md` for where we are. Every source folder has its own `AGENTS.md` saying what to produce
+`progress/` for where we are (`progress.md` is the older log). Every source folder has its own `AGENTS.md` saying what to produce
 there; read it before writing code in that folder.
 
 The runtime model is Claude Haiku 5.5 (`claude-haiku-5-5`). Builders are Claude Code and Cursor.
@@ -29,10 +29,17 @@ Do not confuse the two: code you write calls the model; you are not the model.
 ## Cross-review on pull requests
 
 Requires repo variable `ENABLE_AGENTS=true` plus reviewer secrets (`docs/github-setup.md`). Ready PRs
-get labels `review:claude` and `review:cursor`; Claude reviews `cursor/*` and human branches, Cursor
-reviews `claude/*` and human branches. Request again with label `review:request` or `review:rerequest`
+get one reviewer, chosen by `tools/pick_reviewer.py` from who made the PR (builder branch, then PR body
+marker, then commit authors): Cursor reviews Claude's PRs; Claude reviews Cursor's, human and evenly
+mixed PRs. The label `review:claude` or `review:cursor` shows the choice. Request again with label
+`review:request` or `review:rerequest`
 (removed when the run starts), PR comment `/review` or `/rereview` (write access), or the
 **agent-review** workflow dispatch. Re-review uses the full diff and prioritises earlier comments.
+
+## Merge conflicts
+
+Comment `/fix-conflicts` on a PR to have its own agent resolve them; the workflow tests, pushes and
+comments what was fixed (`docs/github-setup.md`). Protected files are left to a human.
 
 ## Session workflow (one issue per session)
 
@@ -45,13 +52,14 @@ reviews `claude/*` and human branches. Request again with label `review:request`
    with `$ ` are commands that `complete` runs; the rest are checked by a reviewer.
 4. Write the failing test first, then the code. Mark tests that start the fixture site or a
    subprocess `@pytest.mark.integration`, and whole-workflow tests `@pytest.mark.e2e`; the rest are unit.
-5. Change only files matching the issue's `files_allowed` (plus `issue_map.json`, `progress.md`).
+5. Change only files matching the issue's `files_allowed` (plus `issue_map.json` and a new file in `progress/`).
    CI fails a PR that strays.
 6. Set `status` to `in_progress` when you start and `review` when you open the PR. Add a line to
    `notes` if something is surprising.
 7. Run `python3 tools/issue_map.py complete <ID>`. It runs the acceptance commands and only then
    sets `passes`. Never edit `passes` by hand and never mark an issue done yourself.
-8. Append a dated entry to `progress.md`: what changed, what is next, anything that blocked you.
+8. Add a new file `progress/<date>-<ID>.md`: what changed, what is next, anything that blocked you.
+   Do not edit `progress.md` or another entry; a shared log makes every open PR conflict.
 
 ## Rules that code must enforce (tests prove them)
 

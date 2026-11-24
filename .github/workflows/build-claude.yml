@@ -21,6 +21,10 @@ permissions:
   issues: write
   id-token: write
 
+env:
+  # Named one by one: this repo is public and allowed bots are not checked for write access.
+  TRUSTED_BOTS: "cursor[bot],claude[bot]"
+
 concurrency:
   group: build-claude
   cancel-in-progress: false
@@ -66,6 +70,7 @@ jobs:
         if: steps.pick.outputs.id != ''
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: ${{ env.TRUSTED_BOTS }}
           claude_args: >-
             --max-turns 60
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(python3:*),Bash(pytest:*),Bash(ruff:*),Bash(make:*),Bash(git:*),Bash(gh pr create:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(ls:*),Bash(cat:*),Bash(mkdir:*)"
@@ -78,10 +83,10 @@ jobs:
                and stop. Do not guess.
             3. Create branch claude/issue-${{ steps.pick.outputs.id }}. Set its status to in_progress in
                issue_map.json. Write the failing test first, then the code. Touch only files matching
-               files_allowed (plus issue_map.json and progress.md). Never edit .github/ or tools/.
+               files_allowed (plus issue_map.json and a new file in progress/). Never edit .github/ or tools/.
             4. Run `make ci` until it passes, then `python3 tools/issue_map.py complete ${{ steps.pick.outputs.id }}`.
                Never edit `passes` by hand. Never claim a check passed unless you ran it.
-            5. Append a dated entry to progress.md. Commit (the commit hook adds the co-author trailer).
+            5. Add a new dated file in progress/ (see progress/README.md). Commit (the commit hook adds the co-author trailer).
             6. Push and open a DRAFT pull request. The body starts with
                "Closes #${{ steps.pick.outputs.number }}", then lists each acceptance criterion and
                how it was verified. Cursor will review it; do not review your own work.

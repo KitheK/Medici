@@ -7,13 +7,13 @@ issue_map.json ── queue (tools/queue.py) ─┬─ claude-code lane ─► b
  (deps, owner, WIP limit per lane)        └─ cursor lane      ─► build-cursor.yml ─► PR cursor/issue-ID ──┤
                                                                                                            ▼
  CI (ci.yml): lint+unit · integration · e2e · scope  ──► required check `ci`
- agent-review.yml: Claude reviews cursor/* and human PRs · Cursor reviews claude/* and human PRs
+ agent-review.yml: one reviewer per PR: Cursor for Claude's PRs · Claude for Cursor's and human PRs
                     ──► required check `review-gate`            then you merge
 ```
 
 The two builder workflows have separate concurrency groups and the queue gives each builder only its
 own issues, so Claude Code and Cursor build at the same time on different issues. Nobody reviews their
-own PR. Both reviewers run on human-written PRs.
+own PR. Each PR gets one reviewer (`tools/pick_reviewer.py`); Claude reviews human PRs.
 
 ## Test layers
 
@@ -37,6 +37,7 @@ own PR. Both reviewers run on human-written PRs.
 | `GH_PAT` | secret | builders; fine-grained, this repo only, Contents + Pull requests + Issues read/write, **no** Workflows permission |
 | `ENABLE_AGENTS` | variable | `true` switches builders and reviewers on |
 | `ENABLE_NIGHTLY` | variable | `true` lets the scheduled runs pick issues |
+| `ENABLE_CONFLICT_SWEEP` | variable, optional | `true` fixes every conflicting PR after each push to a base branch |
 | `CURSOR_MODEL` | variable, optional | model name passed to `agent --model` |
 
 Also install the Claude GitHub App on the repo. Why `GH_PAT`: pushes and PRs made with the built-in
@@ -63,7 +64,14 @@ label on an issue, or `workflow_dispatch`.
 ## Requesting cross-review
 
 Automatic: when a PR is opened, reopened or marked ready for review (and not a draft),
-`agent-review` adds `review:claude` and `review:cursor`, then both reviewers run if `ENABLE_AGENTS=true`.
+`agent-review` runs one reviewer if `ENABLE_AGENTS=true`, and labels the PR `review:claude` or
+`review:cursor` to show which. The PR's author is decided by the first of these that gives one answer:
+
+1. Builder branch prefix: `claude/` or `cursor/`.
+2. The marker the agent's tool leaves in the PR body (Cursor's hidden comment, Claude Code's footer).
+3. The agent that wrote or co-wrote the most commits.
+
+The other agent reviews. A human PR or an even mix goes to Claude (`DEFAULT_REVIEWER`).
 
 Manual re-run (same requirements as automatic):
 
@@ -71,20 +79,41 @@ Manual re-run (same requirements as automatic):
 |---|---|
 | Label `review:request` | Queue a fresh cross-review (label is removed when the run starts) |
 | Label `review:rerequest` | Re-review the **full current diff**; rubric emphasises prior review comments |
-| PR comment `/review` or `/rereview` | Same as the labels; author must have **write** (or be the repo owner) |
+| PR comment `/review` or `/rereview` as the first line | Same as the labels; author must have **write**, be the repo owner, or be a trusted bot |
 | `workflow_dispatch` on **agent-review** | `pr_number` required; set `rereview` for a re-review pass |
 
 Outcome labels: `review:pass` or `review:changes` (set by `review-gate`).
 
-If `claude-review` and `cursor-review` are **skipped** while `review-gate` is green, the repo
-variable `ENABLE_AGENTS` is not `true`. Set it only after `CLAUDE_CODE_OAUTH_TOKEN`, `CURSOR_API_KEY`
+One of `claude-review` and `cursor-review` is always skipped. If **both** are skipped while
+`review-gate` is green on a ready PR, the repo variable `ENABLE_AGENTS` is not `true`. Set it only after `CLAUDE_CODE_OAUTH_TOKEN`, `CURSOR_API_KEY`
 and (for builders) `GH_PAT` are configured (table above).
+
+## Which bots may start agents
+
+`TRUSTED_BOTS` at the top of `agent-review.yml`, `build-claude.yml` and `fix-conflicts.yml` names them
+one by one. Do not use `*`: the repo is public, and `claude-code-action` does not check that an allowed
+bot has write access, so `*` would let anyone's GitHub App start Claude on your plan.
+
+## Fixing merge conflicts
+
+Comment `/fix-conflicts` on the PR (write access or a trusted bot), or run **fix-conflicts** from Actions
+with the PR number. Set `ENABLE_CONFLICT_SWEEP=true` to also run it after each push to a base branch.
+
+- Entries a PR added to `progress.md` move to their own files in `progress/` without an agent. Anything
+  else is resolved by the agent that made the PR, so the other one still reviews it.
+- The agent has a read-only token, no shell, and may edit only the conflicted files. `make ci` must pass
+  before anything is pushed, and the push is never forced.
+- Conflicts in protected files (`.github/`, `tools/`, `tests/privacy/`, any `AGENTS.md`, build config),
+  deleted or binary files, or more than 20 files go to a human with the label `needs-human`. The sweep
+  skips that label, so remove it to try again.
+- Every run comments on the PR: what was fixed and how, or why nothing was pushed.
+- Without `GH_PAT`, checks and review on the pushed commit wait for someone to approve them on the PR.
 
 ## Smoke test (first time)
 
 1. Set the secrets. Do not set `ENABLE_AGENTS` yet.
 2. Open a PR from a `ci/` or `docs/` branch: `ci` runs, `review-gate` passes with a notice.
-3. Set `ENABLE_AGENTS=true`. Open a small human PR: both reviewers run and post reviews.
+3. Set `ENABLE_AGENTS=true`. Open a small human PR: Claude runs and posts a review.
 4. After E0-1, E1-1 and E1-2 are closed, run `build-claude` and `build-cursor` with `workflow_dispatch`.
 5. On the first real run, confirm `agent -p --force --trust`, `CURSOR_API_KEY`, and
    `claude-code-action@v1` inputs against current Cursor and Claude docs (see

@@ -1,6 +1,6 @@
 # Progress log
 
-Newest entry last. Each session appends one entry: date, issue, what changed, what is next, blockers.
+Closed: add new entries as files in `progress/` (see `progress/README.md`), not here.
 
 ## 2026-11-22: Phase 0 setup (H0-1 to H0-4)
 
@@ -38,20 +38,25 @@ Newest entry last. Each session appends one entry: date, issue, what changed, wh
 - New labels in `.github/labels.json`; documented in `AGENTS.md`, `docs/github-setup.md`, PR template.
 - PRs #52/#54 skipped reviewers because `ENABLE_AGENTS` is not `true` (not a workflow bug).
 
-## 2026-11-23: E5-1 Resume schema and validator
+## 2026-11-23: One designated reviewer per PR
 
-- Added `src/medici/resume/schema/` (`facts.py`, `validate.py`): typed user facts,
-  `ResumeDocument` JSON schema, and strict validator for employers, schools, dates, tools,
-  and project names.
-- Added `tests/resume/` with fabrication tests and a privacy-marked posting-injection test.
-- Owner skipped the E0-1 gate; E2-1 was not needed for this issue (no model client).
-- Next: E5-2 resume prompt/model call once E2-1 lands; E5-3 LaTeX render.
+- `agent-review` picks one reviewer from who made the PR (`tools/pick_reviewer.py`) instead of running
+  both. Branch prefix alone missed Cursor PRs on `issue/*` branches.
+- `review-gate` fails if no reviewer could be designated (it was skipped, which counts as passing).
+- Not yet run on GitHub: open PRs use the new rule only after their base contains this change.
 
-## 2026-11-23: E5-3 LaTeX renderer
+## 2026-11-24: Trusted bots and conflict fixes
 
-- Added `src/medici/resume/render/` (`escape.py`, `render.py`), `templates/jakes.tex` (Jake's shell
-  with `@@MEDICI_*@@` macros), and tests for escaping and macro fill.
-- Branched from `issue/E5-1`; PDF compile remains E5-4. No contact/heading block in output yet
-  (`ResumeDocument` has no header fields).
-- Review follow-up: single-pass macro fill, Jake employer/title order, optional `pdflatex` test.
-- Next: E5-4 sandboxed compile; E5-2 prompt when E2-1 lands.
+- Claude refused runs started by Cursor's bot (PRs 51 and 52). Named bots may now start the Claude
+  workflows and comment commands; only the first line of a comment has to be the command.
+- A comment that is not a command no longer cancels a running review.
+- Added `fix-conflicts.yml` and `tools/conflict_fix.py`: `/fix-conflicts`, a manual run, or an opt-in sweep.
+- Not yet run on GitHub: the conflict workflow only starts once it is on the default branch.
+
+## 2026-11-23: E2-1 Model client
+
+- Added `ModelClient` protocol, in-tree JSON Schema checks, one-retry helper, Anthropic Haiku
+  5.5 client (`output_config.format` json_schema), local gateway client (`MEDICI_LOCAL_MODEL_URL`), and
+  `FakeModelClient`. All tests use mocked HTTP; no live model.
+- Assumed API shapes because E1-2 / data-map gates are still open; see issue `notes` and PR.
+- Next: E2-2 posting parser (depends on E2-1).
