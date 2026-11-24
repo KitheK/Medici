@@ -16,6 +16,7 @@ def test_list_contacts_omits_expired_when_now_omitted(db_conn, frozen_now):
         excerpt="Frank Expired appears on the page.",
         saved=False,
         now=frozen_now - timedelta(days=31),
+        identifier="frank.expired@example.test",
     )
     fresh_id = contacts.save_contact(
         db_conn,
@@ -25,6 +26,7 @@ def test_list_contacts_omits_expired_when_now_omitted(db_conn, frozen_now):
         excerpt="Gina Fresh appears on the page.",
         saved=False,
         now=frozen_now,
+        identifier="gina.fresh@example.test",
     )
     visible = contacts.list_contacts(db_conn, now=frozen_now)
     ids = {c.id for c in visible}
@@ -42,6 +44,7 @@ def test_list_contacts_defaults_now_to_current_time(db_conn, frozen_now, monkeyp
         excerpt="Hank Old on the team page.",
         saved=False,
         now=frozen_now - timedelta(days=40),
+        identifier="hank.old@example.test",
     )
     live_id = contacts.save_contact(
         db_conn,
@@ -51,6 +54,7 @@ def test_list_contacts_defaults_now_to_current_time(db_conn, frozen_now, monkeyp
         excerpt="Ivy Live on the team page.",
         saved=False,
         now=frozen_now,
+        identifier="ivy.live@example.test",
     )
 
     monkeypatch.setattr(contacts, "_current_time", lambda: frozen_now)

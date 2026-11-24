@@ -19,6 +19,7 @@ def test_unsaved_contact_gets_thirty_day_expiry(db_conn, frozen_now):
         excerpt="Avery Lattice leads platform engineering.",
         saved=False,
         now=frozen_now,
+        identifier="avery.lattice@example.test",
     )
     got = contacts.get_contact(db_conn, row_id)
     assert got is not None
@@ -34,6 +35,7 @@ def test_saved_contact_gets_longer_expiry(db_conn, frozen_now):
         excerpt="Blair Widget supports hiring.",
         saved=True,
         now=frozen_now,
+        identifier="blair.widget@example.test",
     )
     got = contacts.get_contact(db_conn, row_id)
     assert got is not None

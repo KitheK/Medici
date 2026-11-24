@@ -56,12 +56,10 @@ def save_contact(
     excerpt: str,
     saved: bool,
     now: datetime,
-    identifier: str | None = None,
+    identifier: str,
     suppression_key: bytes | None = None,
 ) -> int:
-    if identifier is not None and suppression.is_suppressed(
-        conn, identifier, key=suppression_key
-    ):
+    if suppression.is_suppressed(conn, identifier, key=suppression_key):
         raise SuppressedContactError("identifier is suppressed")
     expires = expires_at_for(saved=saved, now=now)
     created = _iso(now)

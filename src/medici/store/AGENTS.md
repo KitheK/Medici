@@ -21,6 +21,7 @@ Persist contacts with retention built in. SQLite first, Postgres at E8-1.
   strips and lower-cases the string it receives.
 - Expiry is code, tested with a fake clock.
 - No contact row without an `expires_at`.
+- Every `save_contact` call must pass an `identifier` so the suppression table is always checked.
 
 ## Neighbours
 

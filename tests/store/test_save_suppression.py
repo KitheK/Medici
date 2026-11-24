@@ -26,17 +26,18 @@ def test_save_contact_rejects_suppressed_identifier(db_conn, frozen_now, suppres
     assert contacts.list_contacts(db_conn, now=frozen_now) == []
 
 
-def test_save_contact_without_identifier_skips_suppression_check(
+def test_save_contact_requires_identifier_for_suppression_check(
     db_conn, frozen_now, suppression_key
 ):
     suppression.add_suppression(db_conn, IDENTIFIER, key=suppression_key)
-    row_id = contacts.save_contact(
-        db_conn,
-        name="Jordan Sandbox",
-        role_text="team",
-        source_url="https://about.example.test/team",
-        excerpt="Jordan Sandbox builds tools.",
-        saved=False,
-        now=frozen_now,
-    )
-    assert contacts.get_contact(db_conn, row_id) is not None
+    with pytest.raises(TypeError):
+        contacts.save_contact(  # type: ignore[call-arg]
+            db_conn,
+            name="Jordan Sandbox",
+            role_text="team",
+            source_url="https://about.example.test/team",
+            excerpt="Jordan Sandbox builds tools.",
+            saved=False,
+            now=frozen_now,
+            suppression_key=suppression_key,
+        )

@@ -16,6 +16,7 @@ def test_contact_at_exact_expires_at_is_deleted_and_not_listed(db_conn, frozen_n
         excerpt="Kai Boundary on the careers page.",
         saved=False,
         now=frozen_now - timedelta(days=30),
+        identifier="kai.boundary@example.test",
     )
     got = contacts.get_contact(db_conn, row_id)
     assert got is not None

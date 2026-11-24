@@ -17,6 +17,7 @@ def test_delete_expired_removes_only_past_rows(db_conn):
         excerpt="Dana Fictional on the team page.",
         saved=False,
         now=anchor - timedelta(days=31),
+        identifier="dana.fictional@example.test",
     )
     fresh_id = contacts.save_contact(
         db_conn,
@@ -26,6 +27,7 @@ def test_delete_expired_removes_only_past_rows(db_conn):
         excerpt="Ellis Sample joined recently.",
         saved=False,
         now=anchor - timedelta(days=5),
+        identifier="ellis.sample@example.test",
     )
     deleted = expiry.delete_expired(db_conn, now=anchor)
     assert deleted == 1
