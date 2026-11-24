@@ -3,7 +3,7 @@
 Medici turns one job posting into a sourced outreach plan: one suspected recruiter, two team
 members, a labelled unverified email-format guess, and a one-page Jake's-format resume built only
 from the user's own facts. Read `docs/build-plan.md` for the plan, `docs/architecture.md` for where each part lives, and
-`progress.md` for where we are. Every source folder has its own `AGENTS.md` saying what to produce
+`progress/` for where we are (`progress.md` is the older log). Every source folder has its own `AGENTS.md` saying what to produce
 there; read it before writing code in that folder.
 
 The runtime model is Claude Haiku 5.5 (`claude-haiku-5-5`). Builders are Claude Code and Cursor.
@@ -14,7 +14,8 @@ Do not confuse the two: code you write calls the model; you are not the model.
 | Task | Command |
 |---|---|
 | Install | `make install` |
-| Everything CI runs | `make ci` (lint, tests, privacy tests, issue-map validation) |
+| Everything CI runs | `make ci` (lint, unit, integration, e2e, privacy, issue-map validation) |
+| One test layer | `make test-unit`, `make test-integration`, `make test-e2e` |
 | Lint only | `python3 -m ruff check .` |
 | Tests only | `python3 -m pytest -q` |
 | Privacy tests only | `make privacy` |
@@ -25,21 +26,40 @@ Do not confuse the two: code you write calls the model; you are not the model.
 | Install commit hook (co-author trailer) | `make hooks` |
 | Sync GitHub issues from the map | `python3 -m tools.sync_github` (also runs in CI on merge to main) |
 
+## Cross-review on pull requests
+
+Requires repo variable `ENABLE_AGENTS=true` plus reviewer secrets (`docs/github-setup.md`). Ready PRs
+get one reviewer, chosen by `tools/pick_reviewer.py` from who made the PR (builder branch, then PR body
+marker, then commit authors): Cursor reviews Claude's PRs; Claude reviews Cursor's, human and evenly
+mixed PRs. The label `review:claude` or `review:cursor` shows the choice. Request again with label
+`review:request` or `review:rerequest`
+(removed when the run starts), PR comment `/review` or `/rereview` (write access), or the
+**agent-review** workflow dispatch. Re-review uses the full diff and prioritises earlier comments.
+
+## Merge conflicts
+
+Comment `/fix-conflicts` on a PR to have its own agent resolve them; the workflow tests, pushes and
+comments what was fixed (`docs/github-setup.md`). Protected files are left to a human.
+
 ## Session workflow (one issue per session)
 
 1. Run `bash init.sh`. If it fails, fix that before anything else.
 2. Run `make next`, or take the issue you were given. Work in its own git worktree and branch named
-   for it, for example `issue/E2-3`.
+   for it: `issue/E2-3` by hand, `claude/issue-E2-3` or `cursor/issue-E2-3` when CI builds it.
+   Claude Code and Cursor work in parallel on different issues (`tools/queue.py` gives each its own);
+   the other builder reviews your PR. Never review your own PR. See `docs/github-setup.md`.
 3. Read the issue in `issue_map.json`. Its `acceptance` list is the definition of done. Lines starting
    with `$ ` are commands that `complete` runs; the rest are checked by a reviewer.
-4. Write the failing test first, then the code.
-5. Change only files matching the issue's `files_allowed` (plus `issue_map.json`, `progress.md`).
+4. Write the failing test first, then the code. Mark tests that start the fixture site or a
+   subprocess `@pytest.mark.integration`, and whole-workflow tests `@pytest.mark.e2e`; the rest are unit.
+5. Change only files matching the issue's `files_allowed` (plus `issue_map.json` and a new file in `progress/`).
    CI fails a PR that strays.
 6. Set `status` to `in_progress` when you start and `review` when you open the PR. Add a line to
    `notes` if something is surprising.
 7. Run `python3 tools/issue_map.py complete <ID>`. It runs the acceptance commands and only then
    sets `passes`. Never edit `passes` by hand and never mark an issue done yourself.
-8. Append a dated entry to `progress.md`: what changed, what is next, anything that blocked you.
+8. Add a new file `progress/<date>-<ID>.md`: what changed, what is next, anything that blocked you.
+   Do not edit `progress.md` or another entry; a shared log makes every open PR conflict.
 
 ## Rules that code must enforce (tests prove them)
 

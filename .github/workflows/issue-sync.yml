@@ -2,7 +2,7 @@ name: issue-sync
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [setup/phase-0, main]
     paths: [issue_map.json, .github/labels.json, tools/sync_github.py]
 
 permissions:
@@ -13,8 +13,8 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Sync labels, milestones and issues from issue_map.json

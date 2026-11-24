@@ -4,7 +4,7 @@ Turn one job posting into a sourced outreach plan: a suspected recruiter, two te
 labelled unverified email-format guess, and a one-page Jake's-format resume built only from your
 own facts. Medici never sends anything for you.
 
-Status: Phase 0 setup. See `docs/build-plan.md`, `progress.md` and `issue_map.json`.
+Status: Phase 0 setup. See `docs/build-plan.md`, `progress/` and `issue_map.json`.
 
 ## Quick start
 
@@ -23,6 +23,12 @@ claude --worktree E2-3      # Claude Code
 bash init.sh                # health check at the start of every session
 python3 tools/issue_map.py complete E2-3   # only this sets `passes`
 ```
+
+## CI, builders and reviewers
+
+Claude Code and Cursor build different issues at the same time and review each other's PRs.
+Setup, secrets, the queue and the test layers are in `docs/github-setup.md`; manual testing is in
+`docs/manual-testing.md`.
 
 ## Where things live
 

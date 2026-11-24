@@ -1,28 +1,187 @@
 [
-  {"name": "agent", "color": "1d76db", "description": "Built by Claude Code or Cursor"},
-  {"name": "human", "color": "5319e7", "description": "Needs a person: decision, data or review"},
-  {"name": "owner:claude-code", "color": "0e8a16", "description": "Owner: Claude Code"},
-  {"name": "owner:cursor", "color": "0e8a16", "description": "Owner: Cursor"},
-  {"name": "owner:human", "color": "0e8a16", "description": "Owner: you"},
-  {"name": "safety:privacy", "color": "b60205", "description": "Enforces a privacy rule; tests may not be weakened"},
-  {"name": "safety:sandbox", "color": "b60205", "description": "Runs untrusted input; sandbox rules apply"},
-  {"name": "size:S", "color": "c5def5", "description": "Small"},
-  {"name": "size:M", "color": "c5def5", "description": "Medium"},
-  {"name": "size:L", "color": "c5def5", "description": "Large"},
-  {"name": "status:todo", "color": "ededed", "description": "Not started"},
-  {"name": "status:in_progress", "color": "fbca04", "description": "Being worked on"},
-  {"name": "status:blocked", "color": "d93f0b", "description": "Blocked; see notes"},
-  {"name": "status:review", "color": "0075ca", "description": "PR open or awaiting review"},
-  {"name": "status:done", "color": "0e8a16", "description": "Acceptance passes"},
-  {"name": "epic:H0", "color": "d4c5f9", "description": "Setup"},
-  {"name": "epic:E0", "color": "d4c5f9", "description": "Decisions"},
-  {"name": "epic:E1", "color": "d4c5f9", "description": "Feasibility spike"},
-  {"name": "epic:E2", "color": "d4c5f9", "description": "Walking skeleton"},
-  {"name": "epic:E3", "color": "d4c5f9", "description": "People lane"},
-  {"name": "epic:E4", "color": "d4c5f9", "description": "Email step"},
-  {"name": "epic:E5", "color": "d4c5f9", "description": "Resume engine"},
-  {"name": "epic:E6", "color": "d4c5f9", "description": "Saved network"},
-  {"name": "epic:E7", "color": "d4c5f9", "description": "Review screen"},
-  {"name": "epic:E8", "color": "d4c5f9", "description": "Launch checks"},
-  {"name": "epic:E9", "color": "d4c5f9", "description": "Batch runner"}
+  {
+    "name": "agent",
+    "color": "1d76db",
+    "description": "Built by Claude Code or Cursor"
+  },
+  {
+    "name": "human",
+    "color": "5319e7",
+    "description": "Needs a person: decision, data or review"
+  },
+  {
+    "name": "owner:claude-code",
+    "color": "0e8a16",
+    "description": "Owner: Claude Code"
+  },
+  {
+    "name": "owner:cursor",
+    "color": "0e8a16",
+    "description": "Owner: Cursor"
+  },
+  {
+    "name": "owner:human",
+    "color": "0e8a16",
+    "description": "Owner: you"
+  },
+  {
+    "name": "safety:privacy",
+    "color": "b60205",
+    "description": "Enforces a privacy rule; tests may not be weakened"
+  },
+  {
+    "name": "safety:sandbox",
+    "color": "b60205",
+    "description": "Runs untrusted input; sandbox rules apply"
+  },
+  {
+    "name": "size:S",
+    "color": "c5def5",
+    "description": "Small"
+  },
+  {
+    "name": "size:M",
+    "color": "c5def5",
+    "description": "Medium"
+  },
+  {
+    "name": "size:L",
+    "color": "c5def5",
+    "description": "Large"
+  },
+  {
+    "name": "status:todo",
+    "color": "ededed",
+    "description": "Not started"
+  },
+  {
+    "name": "status:in_progress",
+    "color": "fbca04",
+    "description": "Being worked on"
+  },
+  {
+    "name": "status:blocked",
+    "color": "d93f0b",
+    "description": "Blocked; see notes"
+  },
+  {
+    "name": "status:review",
+    "color": "0075ca",
+    "description": "PR open or awaiting review"
+  },
+  {
+    "name": "status:done",
+    "color": "0e8a16",
+    "description": "Acceptance passes"
+  },
+  {
+    "name": "epic:H0",
+    "color": "d4c5f9",
+    "description": "Setup"
+  },
+  {
+    "name": "epic:E0",
+    "color": "d4c5f9",
+    "description": "Decisions"
+  },
+  {
+    "name": "epic:E1",
+    "color": "d4c5f9",
+    "description": "Feasibility spike"
+  },
+  {
+    "name": "epic:E2",
+    "color": "d4c5f9",
+    "description": "Walking skeleton"
+  },
+  {
+    "name": "epic:E3",
+    "color": "d4c5f9",
+    "description": "People lane"
+  },
+  {
+    "name": "epic:E4",
+    "color": "d4c5f9",
+    "description": "Email step"
+  },
+  {
+    "name": "epic:E5",
+    "color": "d4c5f9",
+    "description": "Resume engine"
+  },
+  {
+    "name": "epic:E6",
+    "color": "d4c5f9",
+    "description": "Saved network"
+  },
+  {
+    "name": "epic:E7",
+    "color": "d4c5f9",
+    "description": "Review screen"
+  },
+  {
+    "name": "epic:E8",
+    "color": "d4c5f9",
+    "description": "Launch checks"
+  },
+  {
+    "name": "epic:E9",
+    "color": "d4c5f9",
+    "description": "Batch runner"
+  },
+  {
+    "name": "claude-now",
+    "color": "8a63d2",
+    "description": "Run Claude Code on this issue now"
+  },
+  {
+    "name": "cursor-now",
+    "color": "8a63d2",
+    "description": "Run Cursor on this issue now"
+  },
+  {
+    "name": "review:pass",
+    "color": "0e8a16",
+    "description": "Cross-review passed"
+  },
+  {
+    "name": "review:changes",
+    "color": "d93f0b",
+    "description": "Cross-review requested changes"
+  },
+  {
+    "name": "review:claude",
+    "color": "1d76db",
+    "description": "Claude cross-review eligible"
+  },
+  {
+    "name": "review:cursor",
+    "color": "1d76db",
+    "description": "Cursor cross-review eligible"
+  },
+  {
+    "name": "review:request",
+    "color": "fef2c0",
+    "description": "Run agent cross-review (label is removed when the run starts)"
+  },
+  {
+    "name": "review:rerequest",
+    "color": "fef2c0",
+    "description": "Re-run agent cross-review on the full diff (label removed when the run starts)"
+  },
+  {
+    "name": "needs-human",
+    "color": "000000",
+    "description": "Needs a person's judgement"
+  },
+  {
+    "name": "blocked",
+    "color": "ededed",
+    "description": "Waiting on something else"
+  },
+  {
+    "name": "epic:H1",
+    "color": "d4c5f9",
+    "description": "CI and agent workflows"
+  }
 ]
