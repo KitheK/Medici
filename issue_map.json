@@ -421,9 +421,9 @@
         "$ pytest tests/contacts -q",
         "Returns contacts with excerpts; rejects a planted name absent from the page text"
       ],
-      "status": "in_progress",
-      "passes": false,
-      "notes": "Claimed by Cursor for week of 2026-11-22"
+      "status": "done",
+      "passes": true,
+      "notes": "E1-2 / E0-1 human gates skipped per owner. Three-person cap in E3-2. Validator: name in excerpt, word boundaries, whitespace-normalized page match."
     },
     {
       "id": "E2-5",
@@ -487,6 +487,7 @@
       "depends_on": [
         "E2-3",
         "E2-4",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
