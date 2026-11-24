@@ -1,0 +1,343 @@
+# Fix merge conflicts on a PR and comment what was fixed.
+#
+# Start it with the PR comment `/fix-conflicts` (write access or a trusted bot) or workflow_dispatch.
+# With variable ENABLE_CONFLICT_SWEEP=true it also runs after each push to the base branches, for
+# every open PR that conflicts. GitHub does not run pull_request workflows on a conflicting PR, so
+# this one does not use that event.
+#
+#   start    trusted: checks the request, pins both commits, picks the fixer
+#   resolve  read-only token: an agent edits the conflicted files and nothing else
+#   verify   no secrets at all: runs `make ci` on the merged result
+#   finish   the only job that can push: redoes the merge, adds the checked files, pushes, comments
+#
+# The fixer is the agent that made the PR; the other one reviews. tools/conflict_fix.py decides what
+# may be fixed, and always runs from the default branch's copy, never the PR's.
+name: fix-conflicts
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to fix
+        required: true
+        type: number
+  push:
+    branches: [setup/phase-0, main]
+
+permissions:
+  contents: read
+
+env:
+  # Named one by one: this repo is public and allowed bots are not checked for write access.
+  TRUSTED_BOTS: "cursor[bot],claude[bot],github-actions[bot]"
+
+concurrency:
+  # Other comments get a group of their own so they never queue behind or replace a fix.
+  group: fix-conflicts-${{ github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, '/fix-conflicts') && github.run_id || github.event.issue.number || github.event.inputs.pr_number || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    if: >-
+      github.event_name == 'push' &&
+      vars.ENABLE_AGENTS == 'true' &&
+      vars.ENABLE_CONFLICT_SWEEP == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      pull-requests: read
+    steps:
+      - name: Start one run per conflicting PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          list() { gh pr list --state open --limit 100 --json number,mergeable,isDraft,isCrossRepository,labels; }
+          # GitHub works out mergeability in the background after a push.
+          for _ in 1 2 3 4 5 6; do
+            prs=$(list)
+            [ "$(jq '[.[] | select(.mergeable == "UNKNOWN")] | length' <<< "$prs")" = 0 ] && break
+            sleep 20
+          done
+          jq -r '.[] | select(.mergeable == "CONFLICTING" and (.isDraft | not) and (.isCrossRepository | not))
+                     | select([.labels[].name] | index("needs-human") | not) | .number' <<< "$prs" |
+          while read -r n; do
+            echo "PR $n conflicts"
+            gh workflow run fix-conflicts.yml --ref "$DEFAULT_BRANCH" -f pr_number="$n"
+          done
+
+  start:
+    if: >-
+      vars.ENABLE_AGENTS == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/fix-conflicts')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      go: ${{ steps.meta.outputs.go }}
+      pr: ${{ steps.meta.outputs.pr }}
+      head: ${{ steps.meta.outputs.head }}
+      base: ${{ steps.meta.outputs.base }}
+      head_ref: ${{ steps.meta.outputs.head_ref }}
+      fixer: ${{ steps.meta.outputs.fixer }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Check the request and pin the commits
+        id: meta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          EVENT: ${{ github.event_name }}
+          PR: ${{ github.event.issue.number || github.event.inputs.pr_number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_USER: ${{ github.event.comment.user.login }}
+        run: |
+          set -euo pipefail
+          echo "go=false" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = "issue_comment" ]; then
+            first=${COMMENT_BODY%%$'\n'*}
+            first=$(printf '%s' "$first" | tr -d '\r' | sed -e 's/[[:space:]]*$//')
+            [ "$first" = "/fix-conflicts" ] || { echo "Not the command; skipping."; exit 0; }
+            case ",$TRUSTED_BOTS," in
+              *",$COMMENT_USER,"*) ;;
+              *)
+                perm=$(gh api "repos/$REPO/collaborators/$COMMENT_USER/permission" --jq .permission 2>/dev/null || echo none)
+                case "$perm" in
+                  admin|maintain|write) ;;
+                  *) echo "::notice::/fix-conflicts needs write access."; exit 0 ;;
+                esac ;;
+            esac
+          fi
+          meta=$(gh pr view "$PR" --json state,isCrossRepository,headRefName,baseRefName,headRefOid,body,commits)
+          get() { jq -r "$1" <<< "$meta"; }
+          [ "$(get .state)" = "OPEN" ] || { echo "::notice::PR $PR is not open."; exit 0; }
+          [ "$(get .isCrossRepository)" = "false" ] || { echo "::notice::Fork PRs are not fixed."; exit 0; }
+          head_ref=$(get .headRefName); base_ref=$(get .baseRefName)
+          case "$head_ref" in
+            "$DEFAULT_BRANCH"|main) echo "::notice::Will not push to $head_ref."; exit 0 ;;
+          esac
+          base=$(gh api "repos/$REPO/git/ref/heads/$base_ref" --jq .object.sha)
+          case "$(python3 -m tools.pick_reviewer <<< "$meta")" in
+            claude) fixer=cursor ;;
+            cursor) fixer=claude ;;
+            *) echo "::error::No fixer designated"; exit 1 ;;
+          esac
+          {
+            echo "pr=$PR"
+            echo "head=$(get .headRefOid)"
+            echo "base=$base"
+            echo "head_ref=$head_ref"
+            echo "fixer=$fixer"
+            echo "go=true"
+          } >> "$GITHUB_OUTPUT"
+
+  resolve:
+    needs: start
+    if: needs.start.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.plan.outputs.status }}
+    env:
+      HEAD_SHA: ${{ needs.start.outputs.head }}
+      BASE_SHA: ${{ needs.start.outputs.base }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Keep trusted tools outside the work tree, then merge
+        id: plan
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/trusted" "$RUNNER_TEMP/result/files"
+          cp -r tools "$RUNNER_TEMP/trusted/"
+          trusted=$(git rev-parse HEAD)
+          cd "$RUNNER_TEMP/trusted"
+          python3 -m tools.conflict_fix plan --repo "$GITHUB_WORKSPACE" --head "$HEAD_SHA" --base "$BASE_SHA" \
+            > "$RUNNER_TEMP/result/plan.json"
+          cat "$RUNNER_TEMP/result/plan.json"
+          status=$(jq -r .status "$RUNNER_TEMP/result/plan.json")
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "agent=$(jq -r 'if .status == "conflicts" and (.files | length) > 0 then "yes" else "no" end' "$RUNNER_TEMP/result/plan.json")" >> "$GITHUB_OUTPUT"
+          # The agent runs with the default branch's agent settings, not the PR's.
+          cd "$GITHUB_WORKSPACE"
+          rm -rf .claude .cursor
+          git checkout -q "$trusted" -- .claude .cursor
+          cp "$RUNNER_TEMP/trusted/tools/conflict-prompt.md" .conflict-prompt.md
+          jq -r '.files[] | "- " + .' "$RUNNER_TEMP/result/plan.json" >> .conflict-prompt.md
+      - name: Load the prompt
+        id: prompt
+        if: steps.plan.outputs.agent == 'yes'
+        run: |
+          d="PROMPT_$(openssl rand -hex 8)"
+          { echo "text<<$d"; cat .conflict-prompt.md; echo "$d"; } >> "$GITHUB_OUTPUT"
+      - name: Claude resolves
+        if: steps.plan.outputs.agent == 'yes' && needs.start.outputs.fixer == 'claude'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_bots: ${{ env.TRUSTED_BOTS }}
+          claude_args: >-
+            --max-turns 40
+            --allowedTools "Read,Glob,Grep,Edit,Write"
+          prompt: ${{ steps.prompt.outputs.text }}
+      - name: Install Cursor CLI
+        if: steps.plan.outputs.agent == 'yes' && needs.start.outputs.fixer == 'cursor'
+        run: |
+          curl https://cursor.com/install -fsS | bash
+          echo "$HOME/.cursor/bin" >> "$GITHUB_PATH"
+      - name: Cursor resolves
+        if: steps.plan.outputs.agent == 'yes' && needs.start.outputs.fixer == 'cursor'
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          MODEL: ${{ vars.CURSOR_MODEL }}
+        run: |
+          jq '{"permissions": {"allow": (["Read(**)", "Write(conflict-notes.md)"] + [.files[] | "Write(" + . + ")"]),
+               "deny": ["Shell(*)", "Write(.github/**)", "Write(tools/**)", "Write(.env*)"]}}' \
+            "$RUNNER_TEMP/result/plan.json" > .cursor/cli.json
+          model=(); [ -n "$MODEL" ] && model=(--model "$MODEL")
+          timeout 25m agent -p --force --trust "${model[@]}" "$(cat .conflict-prompt.md)"
+      - name: Take only the planned files, and check them
+        if: steps.plan.outputs.status == 'conflicts'
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/trusted"
+          python3 -m tools.conflict_fix collect --repo "$GITHUB_WORKSPACE" \
+            --plan "$RUNNER_TEMP/result/plan.json" --out "$RUNNER_TEMP/result/files"
+          notes="$GITHUB_WORKSPACE/conflict-notes.md"
+          if [ -f "$notes" ] && [ ! -L "$notes" ]; then head -c 8000 "$notes" > "$RUNNER_TEMP/result/notes.md"; fi
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.plan.outputs.status != ''
+        with:
+          name: resolved
+          path: ${{ runner.temp }}/result
+          include-hidden-files: true
+          retention-days: 3
+
+  verify:
+    needs: [start, resolve]
+    if: needs.resolve.outputs.status == 'conflicts'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      HEAD_SHA: ${{ needs.start.outputs.head }}
+      BASE_SHA: ${{ needs.start.outputs.base }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: resolved
+          path: ${{ runner.temp }}/result
+      - name: Redo the merge with the checked files
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/trusted" "$RUNNER_TEMP/result/files"
+          cp -r tools "$RUNNER_TEMP/trusted/"
+          cd "$RUNNER_TEMP/trusted"
+          python3 -m tools.conflict_fix apply --repo "$GITHUB_WORKSPACE" \
+            --head "$HEAD_SHA" --base "$BASE_SHA" --out "$RUNNER_TEMP/result/files"
+      - uses: actions/setup-python@v7
+        with: {python-version: "3.12"}
+      - run: make install
+      - run: make ci
+
+  finish:
+    if: always() && needs.start.outputs.go == 'true'
+    needs: [start, resolve, verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      HEAD_SHA: ${{ needs.start.outputs.head }}
+      BASE_SHA: ${{ needs.start.outputs.base }}
+      HEAD_REF: ${{ needs.start.outputs.head_ref }}
+      PR: ${{ needs.start.outputs.pr }}
+      FIXER: ${{ needs.start.outputs.fixer }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: resolved
+          path: ${{ runner.temp }}/result
+      - name: Keep trusted tools outside the work tree
+        run: |
+          mkdir -p "$RUNNER_TEMP/trusted" "$RUNNER_TEMP/result/files"
+          cp -r tools "$RUNNER_TEMP/trusted/"
+      - name: Merge and push
+        id: push
+        if: needs.verify.result == 'success'
+        env:
+          PUSH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git config user.name "medici-conflicts[bot]"
+          git config user.email "medici-conflicts@users.noreply.github.com"
+          (cd "$RUNNER_TEMP/trusted" && python3 -m tools.conflict_fix apply --repo "$GITHUB_WORKSPACE" \
+            --head "$HEAD_SHA" --base "$BASE_SHA" --out "$RUNNER_TEMP/result/files")
+          git -c core.hooksPath="$RUNNER_TEMP/trusted/tools/hooks" commit -q -m "Merge base branch and fix conflicts (PR $PR)"
+          # Not forced: rejected if the branch moved while this ran.
+          GH_TOKEN="$PUSH_TOKEN" git -c credential.helper= -c credential.helper='!gh auth git-credential' \
+            push -q "https://github.com/$REPO.git" "HEAD:refs/heads/$HEAD_REF"
+          echo "commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Comment what happened
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # this token's comments start no workflows
+          GH_REPO: ${{ github.repository }}
+          STATUS: ${{ needs.resolve.outputs.status }}
+          RESOLVE: ${{ needs.resolve.result }}
+          VERIFY: ${{ needs.verify.result }}
+          PUSHED: ${{ steps.push.outcome }}
+          COMMIT: ${{ steps.push.outputs.commit }}
+          HAS_PAT: ${{ secrets.GH_PAT != '' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/trusted"
+          args=(--plan "$RUNNER_TEMP/result/plan.json" --notes "$RUNNER_TEMP/result/notes.md" --fixer "$FIXER" --commit "$COMMIT")
+          [ "$HAS_PAT" = "true" ] && args+=(--ci-starts)
+          outcome=human
+          if [ "$PUSHED" = "success" ]; then outcome=fixed
+          elif [ "$STATUS" = "clean" ]; then outcome=clean
+          elif [ "$STATUS" = "human" ]; then :
+          elif [ "$RESOLVE" != "success" ]; then args+=(--reason "the conflicts could not be resolved safely")
+          elif [ "$VERIFY" != "success" ]; then args+=(--reason "the checks did not pass on the merged result")
+          else args+=(--reason "the push was refused, probably because the branch moved")
+          fi
+          python3 -m tools.conflict_fix comment --outcome "$outcome" "${args[@]}" > "$RUNNER_TEMP/comment.md"
+          printf '\n[Run log](%s)\n' "$RUN_URL" >> "$RUNNER_TEMP/comment.md"
+          gh pr comment "$PR" --body-file "$RUNNER_TEMP/comment.md"
+          if [ "$outcome" = human ]; then gh pr edit "$PR" --add-label needs-human; exit 1; fi
