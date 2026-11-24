@@ -5,7 +5,8 @@
 #
 # Manual controls (need ENABLE_AGENTS=true and reviewer secrets — see docs/github-setup.md):
 #   • Labels `review:request` / `review:rerequest` (removed when the run starts)
-#   • PR comment `/review` or `/rereview` from someone with write access
+#   • PR comment whose first line is `/review` or `/rereview`, from someone with write access or a
+#     bot in TRUSTED_BOTS
 #   • workflow_dispatch with pr_number (optional rereview: true)
 name: agent-review
 
@@ -32,8 +33,13 @@ permissions:
   issues: write
   id-token: write
 
+env:
+  # Named one by one: this repo is public and allowed bots are not checked for write access.
+  TRUSTED_BOTS: "cursor[bot],claude[bot]"
+
 concurrency:
-  group: review-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}
+  # Other comments get a group of their own, so a bot's comment cannot cancel a running review.
+  group: review-${{ github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, '/review') && !startsWith(github.event.comment.body, '/rereview') && github.run_id || github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
@@ -83,8 +89,9 @@ jobs:
             want=true
           elif [ "$EVENT" = "issue_comment" ]; then
             pr="$ISSUE_NUM"
-            body=$(printf '%s' "$COMMENT_BODY" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-            case "$body" in
+            first=${COMMENT_BODY%%$'\n'*}   # agents add a footer below the command
+            first=$(printf '%s' "$first" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            case "$first" in
               /review) ;;
               /rereview) rereview=true ;;
               *) echo "Comment is not a review command; skipping."; exit 0 ;;
@@ -92,14 +99,19 @@ jobs:
             if ! gh pr view "$pr" --json number --jq .number >/dev/null 2>&1; then
               echo "Issue is not a pull request; skipping."; exit 0
             fi
-            perm=$(gh api "repos/$REPO/collaborators/$COMMENT_USER/permission" --jq .permission 2>/dev/null || echo none)
-            case "$perm" in
-              admin|maintain|write) ;;
+            case ",$TRUSTED_BOTS," in
+              *",$COMMENT_USER,"*) ;;   # a bot has no collaborator permission to look up
               *)
-                if [ "$COMMENT_USER" != "$OWNER" ]; then
-                  gh pr comment "$pr" --body "Cross-review commands need write access on this repo."
-                  echo "Insufficient permission"; exit 0
-                fi
+                perm=$(gh api "repos/$REPO/collaborators/$COMMENT_USER/permission" --jq .permission 2>/dev/null || echo none)
+                case "$perm" in
+                  admin|maintain|write) ;;
+                  *)
+                    if [ "$COMMENT_USER" != "$OWNER" ]; then
+                      gh pr comment "$pr" --body "Cross-review commands need write access on this repo."
+                      echo "Insufficient permission"; exit 0
+                    fi
+                    ;;
+                esac
                 ;;
             esac
             want=true
@@ -228,6 +240,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          allowed_bots: ${{ env.TRUSTED_BOTS }}
           claude_args: >-
             --max-turns 30
             --allowedTools "Read,Glob,Grep,Write"
