@@ -366,9 +366,9 @@
         "$ pytest tests/posting -q",
         "Extracts company, domain, title, team text and named contact on 10 fixture postings"
       ],
-      "status": "in_progress",
-      "passes": false,
-      "notes": "Claimed by Cursor for week of 2026-11-22"
+      "status": "done",
+      "passes": true,
+      "notes": "Claimed by Cursor for week of 2026-11-22. Owner skipped human gates E0-1/E1-1; postings are synthetic fixtures (not E1-1 golden set). Tests use FakeModelClient only—no live model. Parser post-filters domain (hostname + verbatim) and named_contact (verbatim); escapes </untrusted_data> and caps input length; raw.get for missing keys (full schema enforcement stays in E2-1). E2-6 depends_on human gates so marking E2-2 done does not trip test_real_queue_offers_no_product_issue_until_the_human_gates_pass."
     },
     {
       "id": "E2-3",
@@ -462,7 +462,10 @@
         "E2-4",
         "E2-5",
         "H0-2",
-        "H0-3"
+        "H0-3",
+        "E0-1",
+        "E1-1",
+        "E1-2"
       ],
       "owner": "cursor",
       "labels": [
@@ -478,7 +481,7 @@
       ],
       "status": "todo",
       "passes": false,
-      "notes": "Claimed by Cursor for week of 2026-11-22"
+      "notes": "Claimed by Cursor for week of 2026-11-22. Depends on human gates E0-1/E1-1/E1-2 so queue pick stays H0/H1 until feasibility closes (same pattern as E3-4; H1-3 may add picker filter)."
     },
     {
       "id": "E3-1",
