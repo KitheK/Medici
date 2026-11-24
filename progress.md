@@ -52,3 +52,11 @@ Closed: add new entries as files in `progress/` (see `progress/README.md`), not 
 - A comment that is not a command no longer cancels a running review.
 - Added `fix-conflicts.yml` and `tools/conflict_fix.py`: `/fix-conflicts`, a manual run, or an opt-in sweep.
 - Not yet run on GitHub: the conflict workflow only starts once it is on the default branch.
+
+## 2026-11-23: E2-1 Model client
+
+- Added `ModelClient` protocol, in-tree JSON Schema checks, one-retry helper, Anthropic Haiku
+  5.5 client (`output_config.format` json_schema), local gateway client (`MEDICI_LOCAL_MODEL_URL`), and
+  `FakeModelClient`. All tests use mocked HTTP; no live model.
+- Assumed API shapes because E1-2 / data-map gates are still open; see issue `notes` and PR.
+- Next: E2-2 posting parser (depends on E2-1).
