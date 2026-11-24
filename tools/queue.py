@@ -19,13 +19,6 @@ import sys
 from tools.issue_map import DEFAULT_MAP, by_id, load, ready
 
 BUILDERS = ("claude-code", "cursor")
-HUMAN_GATES = ("E0-1", "E1-1", "E1-2")
-SETUP_EPIC_PREFIXES = ("H0", "H1")
-
-
-def human_gates_pass(data: dict) -> bool:
-    index = by_id(data)
-    return all(index[i]["passes"] for i in HUMAN_GATES if i in index)
 
 
 def pick(
@@ -43,8 +36,6 @@ def pick(
     if len(held) >= wip:
         return None
     candidates = [i for i in ready(data, owner) if i["id"] not in busy]
-    if not human_gates_pass(data):
-        candidates = [i for i in candidates if i["id"].startswith(SETUP_EPIC_PREFIXES)]
     if force:
         return force if any(i["id"] == force for i in candidates) else None
     return candidates[0]["id"] if candidates else None
