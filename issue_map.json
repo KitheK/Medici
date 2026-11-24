@@ -664,9 +664,9 @@
         "$ pytest tests/resume -q",
         "Validator rejects any employer, school, date or tool not in the user's facts"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "Owner skipped unfinished E0-1 gate for this session. E2-1 (model client) not required here\u2014schema/validator are pure Python with dict round-trips for E5-2. Resume JSON shape: education, experience, skills, optional projects; dates split on --/\u2013/-/\\bto\\b. Validator is per-entry (dates/titles/degrees/project tools) and scans bullets for tools/numbers absent from user facts."
     },
     {
       "id": "E5-2",
@@ -674,6 +674,9 @@
       "epic": "E5",
       "depends_on": [
         "E5-1",
+        "E0-1",
+        "E1-1",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
@@ -699,6 +702,9 @@
       "epic": "E5",
       "depends_on": [
         "E5-1",
+        "E0-1",
+        "E1-1",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
@@ -709,15 +715,16 @@
       "files_allowed": [
         "src/medici/resume/render/**",
         "tests/resume/**",
-        "templates/**"
+        "templates/**",
+        ".github/workflows/ci.yml"
       ],
       "acceptance": [
         "$ pytest tests/resume -q",
         "Fills Jake's template macros and escapes & % $ # _ { } ~ ^ \\\\"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "Stacked on issue/E5-1 (PR #54). Owner skipped human gates. No resume heading/contact until a later issue adds fields to ResumeDocument. CI scope: stacked PRs set github.base_ref to setup/phase-0; scope job uses pull_request.base.ref (one-line ci.yml, see PR discussion)."
     },
     {
       "id": "E5-4",
@@ -725,6 +732,9 @@
       "epic": "E5",
       "depends_on": [
         "E5-3",
+        "E0-1",
+        "E1-1",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],

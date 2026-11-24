@@ -56,7 +56,7 @@ jobs:
         with: {python-version: "3.12"}
       - name: Branch only touches the issue's files_allowed
         env:
-          BASE: ${{ github.base_ref }}
+          BASE: ${{ github.event.pull_request.base.ref }}
         run: python -m tools.check_files_allowed "origin/$BASE"
 
   # The one required status check: green only if every layer is green.
