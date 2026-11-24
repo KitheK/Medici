@@ -37,6 +37,7 @@ own PR. Each PR gets one reviewer (`tools/pick_reviewer.py`); Claude reviews hum
 | `GH_PAT` | secret | builders; fine-grained, this repo only, Contents + Pull requests + Issues read/write, **no** Workflows permission |
 | `ENABLE_AGENTS` | variable | `true` switches builders and reviewers on |
 | `ENABLE_NIGHTLY` | variable | `true` lets the scheduled runs pick issues |
+| `ENABLE_CONFLICT_SWEEP` | variable, optional | `true` fixes every conflicting PR after each push to a base branch |
 | `CURSOR_MODEL` | variable, optional | model name passed to `agent --model` |
 
 Also install the Claude GitHub App on the repo. Why `GH_PAT`: pushes and PRs made with the built-in
@@ -78,7 +79,7 @@ Manual re-run (same requirements as automatic):
 |---|---|
 | Label `review:request` | Queue a fresh cross-review (label is removed when the run starts) |
 | Label `review:rerequest` | Re-review the **full current diff**; rubric emphasises prior review comments |
-| PR comment `/review` or `/rereview` | Same as the labels; author must have **write** (or be the repo owner) |
+| PR comment `/review` or `/rereview` as the first line | Same as the labels; author must have **write**, be the repo owner, or be a trusted bot |
 | `workflow_dispatch` on **agent-review** | `pr_number` required; set `rereview` for a re-review pass |
 
 Outcome labels: `review:pass` or `review:changes` (set by `review-gate`).
@@ -86,6 +87,27 @@ Outcome labels: `review:pass` or `review:changes` (set by `review-gate`).
 One of `claude-review` and `cursor-review` is always skipped. If **both** are skipped while
 `review-gate` is green on a ready PR, the repo variable `ENABLE_AGENTS` is not `true`. Set it only after `CLAUDE_CODE_OAUTH_TOKEN`, `CURSOR_API_KEY`
 and (for builders) `GH_PAT` are configured (table above).
+
+## Which bots may start agents
+
+`TRUSTED_BOTS` at the top of `agent-review.yml`, `build-claude.yml` and `fix-conflicts.yml` names them
+one by one. Do not use `*`: the repo is public, and `claude-code-action` does not check that an allowed
+bot has write access, so `*` would let anyone's GitHub App start Claude on your plan.
+
+## Fixing merge conflicts
+
+Comment `/fix-conflicts` on the PR (write access or a trusted bot), or run **fix-conflicts** from Actions
+with the PR number. Set `ENABLE_CONFLICT_SWEEP=true` to also run it after each push to a base branch.
+
+- New `progress.md` entries from both sides are kept without an agent. Anything else is resolved by the
+  agent that made the PR, so the other one still reviews it.
+- The agent has a read-only token, no shell, and may edit only the conflicted files. `make ci` must pass
+  before anything is pushed, and the push is never forced.
+- Conflicts in protected files (`.github/`, `tools/`, `tests/privacy/`, any `AGENTS.md`, build config),
+  deleted or binary files, or more than 20 files go to a human with the label `needs-human`. The sweep
+  skips that label, so remove it to try again.
+- Every run comments on the PR: what was fixed and how, or why nothing was pushed.
+- Without `GH_PAT`, checks and review do not start by themselves on the pushed commit.
 
 ## Smoke test (first time)
 
