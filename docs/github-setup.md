@@ -99,15 +99,15 @@ bot has write access, so `*` would let anyone's GitHub App start Claude on your 
 Comment `/fix-conflicts` on the PR (write access or a trusted bot), or run **fix-conflicts** from Actions
 with the PR number. Set `ENABLE_CONFLICT_SWEEP=true` to also run it after each push to a base branch.
 
-- New `progress.md` entries from both sides are kept without an agent. Anything else is resolved by the
-  agent that made the PR, so the other one still reviews it.
+- Entries a PR added to `progress.md` move to their own files in `progress/` without an agent. Anything
+  else is resolved by the agent that made the PR, so the other one still reviews it.
 - The agent has a read-only token, no shell, and may edit only the conflicted files. `make ci` must pass
   before anything is pushed, and the push is never forced.
 - Conflicts in protected files (`.github/`, `tools/`, `tests/privacy/`, any `AGENTS.md`, build config),
   deleted or binary files, or more than 20 files go to a human with the label `needs-human`. The sweep
   skips that label, so remove it to try again.
 - Every run comments on the PR: what was fixed and how, or why nothing was pushed.
-- Without `GH_PAT`, checks and review do not start by themselves on the pushed commit.
+- Without `GH_PAT`, checks and review on the pushed commit wait for someone to approve them on the PR.
 
 ## Smoke test (first time)
 

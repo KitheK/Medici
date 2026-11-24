@@ -225,3 +225,33 @@ def test_automatic_conflict_sweep_is_opt_in():
     sweep = load("fix-conflicts.yml")["jobs"]["sweep"]
     assert "vars.ENABLE_CONFLICT_SWEEP == 'true'" in sweep["if"]
     assert "vars.ENABLE_AGENTS == 'true'" in sweep["if"]
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "AGENTS.md",
+        ".github/workflows/build-claude.yml",
+        ".github/workflows/build-cursor.yml",
+        ".github/pull_request_template.md",
+    ],
+)
+def test_agents_are_told_to_add_their_own_progress_file(name):
+    text = (ROOT / name).read_text(encoding="utf-8")
+    assert "progress/" in text
+    for old in ("entry to progress.md", "entry to `progress.md`", "`progress.md` has a dated"):
+        assert old not in text, "a shared log makes every open PR conflict"
+
+
+def test_any_issue_branch_may_add_a_progress_file():
+    from tools.check_files_allowed import disallowed
+
+    assert disallowed(["progress/2026-11-24-E2-3.md"], []) == []
+    assert disallowed(["progress/nested/x.md", "progress/x.py"], []) != []
+    assert "Write(progress/**)" in (ROOT / ".cursor" / "cli.json").read_text(encoding="utf-8")
+
+
+def test_the_old_progress_log_points_to_the_new_place():
+    preamble = (ROOT / "progress.md").read_text(encoding="utf-8").split("## ", 1)[0]
+    assert "progress/" in preamble
+    assert (ROOT / "progress" / "README.md").is_file()
