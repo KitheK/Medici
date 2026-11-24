@@ -60,35 +60,72 @@ def issues(**passes):
 def test_plan_lists_the_conflicted_files(make):
     repo, head, base = make({"a.txt": "base\n"}, {"a.txt": "head\n"}, {"a.txt": "start\n"})
     assert cf.plan(repo, head, base) == {
-        "status": "conflicts", "files": ["a.txt"], "auto": [], "reason": "",
+        "status": "conflicts", "files": ["a.txt"], "auto": [], "moved": [], "reason": "",
     }
 
 
 @pytest.mark.integration
-def test_the_progress_log_keeps_both_sides_without_an_agent(make, tmp_path):
+def test_new_log_entries_move_to_their_own_file_without_an_agent(make, tmp_path):
     start = "# Log\n\n## One\n\n- first\n"
+    base_log = start + "\n## Two\n\n- from base\n- Next: x\n"
     repo, head, base = make(
-        {"progress.md": start + "\n## Two\n\n- from base\n- Next: x\n"},
-        {"progress.md": start + "\n## Three\n\n- from head\n- Next: x\n"},
+        {"progress.md": base_log},
+        {"progress.md": start + "\n## 2026-11-23: E2-3 Fetch!\n\n- from head\n- Next: x\n"},
         {"progress.md": start},
     )
     planned = cf.plan(repo, head, base)
     assert (planned["status"], planned["files"], planned["auto"]) == (
         "conflicts", [], ["progress.md"],
     )
+    assert planned["moved"] == ["progress/2026-11-23-e2-3-fetch.md"]
     out = tmp_path / "out"
     out.mkdir()
     cf.apply(repo, head, base, out)
-    assert (repo / "progress.md").read_text(encoding="utf-8") == (
-        start + "\n## Two\n\n- from base\n- Next: x\n" + "\n## Three\n\n- from head\n- Next: x\n"
+    assert (repo / "progress.md").read_text(encoding="utf-8") == base_log
+    moved = repo / "progress/2026-11-23-e2-3-fetch.md"
+    assert moved.read_text(encoding="utf-8") == (
+        "# 2026-11-23: E2-3 Fetch!\n\n- from head\n- Next: x\n"
     )
+    assert "progress/2026-11-23-e2-3-fetch.md" in git(repo, "diff", "--cached", "--name-only")
+
+
+def conflicting_log(make, extra_base):
+    start = "# Log\n\n## One\n\n- a\n"
+    return make(
+        {"progress.md": start + "\n## Two\n\n- b\n"} | extra_base,
+        {"progress.md": start + "\n## Three\n\n- c\n"},
+        {"progress.md": start},
+    )
+
+
+@pytest.mark.integration
+def test_an_entry_file_that_already_exists_with_other_text_is_not_overwritten(make):
+    repo, head, base = conflicting_log(make, {"progress/three.md": "# Three\n\n- other\n"})
+    planned = cf.plan(repo, head, base)
+    assert (planned["files"], planned["auto"], planned["moved"]) == (["progress.md"], [], [])
+
+
+@pytest.mark.integration
+def test_an_entry_file_that_already_exists_with_the_same_text_is_fine(make):
+    repo, head, base = conflicting_log(make, {"progress/three.md": "# Three\n\n- c\n"})
+    assert cf.plan(repo, head, base)["auto"] == ["progress.md"]
 
 
 def test_log_entry_edited_on_one_side_keeps_the_edit():
     old, new = "# Log\n\n## One\n\n- a\n", "# Log\n\n## One\n\n- b\n"
     added = "\n## Two\n\n- c\n"
-    assert cf.combine_log(base=new, start=old, head=old + added) == new + added
-    assert cf.combine_log(base=old + added, start=old, head=new) == new + added
+    moved = {"progress/two.md": "# Two\n\n- c\n"}
+    assert cf.split_log(base=new, start=old, head=old + added) == (new, moved)
+    assert cf.split_log(base=old + added, start=old, head=new) == (new + added, {})
+
+
+def test_two_entries_that_would_share_a_file_are_not_guessed():
+    head = "## A b\n\n- 1\n\n## A-b\n\n- 2\n"
+    assert cf.split_log(base="", start="", head=head) is None
+
+
+def test_an_entry_whose_heading_gives_no_file_name_is_not_guessed():
+    assert cf.split_log(base="", start="", head="## !!!\n\n- 1\n") is None
 
 
 @pytest.mark.parametrize(
@@ -101,7 +138,7 @@ def test_log_entry_edited_on_one_side_keeps_the_edit():
     ],
 )
 def test_log_entries_that_cannot_be_combined_safely_are_not_guessed(base, start, head):
-    assert cf.combine_log(base=base, start=start, head=head) is None
+    assert cf.split_log(base=base, start=start, head=head) is None
 
 
 @pytest.mark.integration
@@ -251,7 +288,7 @@ def test_a_plain_row_of_equals_signs_is_not_a_marker():
 def comment(**kw):
     base = {
         "outcome": "fixed", "fixer": "cursor", "files": ["a.txt"], "notes": "Kept both lines.",
-        "auto": [], "commit": "abc1234", "ci_starts": True, "reason": "",
+        "auto": [], "moved": [], "commit": "abc1234", "ci_starts": True, "reason": "",
     }
     return cf.comment(**(base | kw))
 
@@ -265,9 +302,19 @@ def test_comment_says_what_was_fixed_by_whom_and_where():
 def test_comment_separates_automatic_merges_from_agent_fixes():
     text = comment(files=[], auto=["progress.md"], notes="")
     assert "`progress.md`" in text
-    assert "kept both sides" in text
+    assert "without an agent" in text
+    assert "kept both sides" not in text
     assert "Cursor" not in text  # no agent ran, so none is credited
     assert "did not leave notes" not in text
+
+
+def test_comment_lists_log_entries_that_moved():
+    text = comment(files=[], auto=["progress.md"], moved=["progress/two.md"])
+    assert "`progress/two.md`" in text
+
+
+def test_comment_says_how_to_start_checks_without_the_pat():
+    assert "approve" in comment(ci_starts=False).lower()
 
 
 def test_comment_warns_when_checks_will_not_start_by_themselves():

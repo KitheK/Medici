@@ -29,7 +29,8 @@ REQUIRED = [
 ID_RE = re.compile(r"^[HE]\d+-\d+$")
 COMMAND_PREFIX = "$ "  # acceptance lines starting with this are run; everything else is prose
 # Files every agent session may touch in addition to its own `files_allowed`.
-ALWAYS_ALLOWED = ["issue_map.json", "progress.md"]
+# progress.md is the old shared log; new entries go in progress/.
+ALWAYS_ALLOWED = ["issue_map.json", "progress.md", "progress/*.md"]
 
 
 def load(path: Path) -> dict:

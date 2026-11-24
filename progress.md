@@ -1,6 +1,6 @@
 # Progress log
 
-Newest entry last. Each session appends one entry: date, issue, what changed, what is next, blockers.
+Closed: add new entries as files in `progress/` (see `progress/README.md`), not here.
 
 ## 2026-11-22: Phase 0 setup (H0-1 to H0-4)
 
