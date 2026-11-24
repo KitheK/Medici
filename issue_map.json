@@ -393,9 +393,9 @@
         "$ pytest tests/fetch -q",
         "Skips robots-blocked paths, rejects off-allowlist URLs, limits to 1 request per second per host, converts HTML to Markdown"
       ],
-      "status": "todo",
-      "passes": false,
-      "notes": ""
+      "status": "done",
+      "passes": true,
+      "notes": "E1-2 human gate skipped per owner. Allowlist: *.example.test, *.example.invalid, optional allow_fixture_hosts for 127.0.0.1/localhost in tests, plus per-job company_hosts (E2-2). PR #53 review: redirect hop revalidation, robots 4xx vs 5xx/network, 2MB body cap, void-element tag stack."
     },
     {
       "id": "E2-4",
@@ -404,6 +404,7 @@
       "depends_on": [
         "E2-1",
         "E2-3",
+        "E1-2",
         "H0-2",
         "H0-3"
       ],
