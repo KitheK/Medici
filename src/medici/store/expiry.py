@@ -13,9 +13,9 @@ def _iso(dt: datetime) -> str:
 
 
 def delete_expired(conn: sqlite3.Connection, *, now: datetime) -> int:
-    """Remove contacts with expires_at strictly before ``now``. Returns rows deleted."""
+    """Remove contacts with expires_at at or before ``now``. Returns rows deleted."""
     cur = conn.execute(
-        "DELETE FROM contacts WHERE expires_at < ?",
+        "DELETE FROM contacts WHERE expires_at <= ?",
         (_iso(now),),
     )
     conn.commit()

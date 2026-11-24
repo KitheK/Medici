@@ -441,6 +441,7 @@
       "files_allowed": [
         "src/medici/store/**",
         "tests/store/**",
+        "progress/**",
         "tools/queue.py"
       ],
       "acceptance": [
@@ -449,7 +450,7 @@
       ],
       "status": "done",
       "passes": true,
-      "notes": "E0-1 gate skipped per owner: retention uses AGENTS.md (30d unsaved, 180d saved from save time as stand-in until E6-2 re-verification). Suppression HMAC key from MEDICI_SUPPRESSION_KEY (vault in E8-1). Identifier normalized strip+lower before HMAC. tools/queue.py (H1-3 file) touched here so completing E2-5 does not surface E3-4 before human gates E0-1/E1-1/E1-2 pass."
+      "notes": "E0-1 gate skipped per owner: retention uses AGENTS.md (30d unsaved, 180d saved from save time as stand-in until E6-2 re-verification). Suppression HMAC key from MEDICI_SUPPRESSION_KEY (vault in E8-1). Identifier normalized strip+lower before HMAC. tools/queue.py human-gate filter kept for CI (test_real_queue); cross-review preferred H1-3 ownership—owner to split or accept here."
     },
     {
       "id": "E2-6",
