@@ -696,9 +696,9 @@
         "$ pytest tests/resume -q",
         "Schema-valid JSON on 10 sample fact sets; an injected posting leaves output unchanged"
       ],
-      "status": "in_progress",
-      "passes": false,
-      "notes": "Claimed by Cursor for week of 2026-11-22"
+      "status": "done",
+      "passes": true,
+      "notes": "Owner skipped open human gates. Tests use FakeModelClient only; generate_resume retries malformed JSON and ValidationError once. Interim bullet tool/metric checks live in prompt/bullets.py until E5-1 bullet rules fully align."
     },
     {
       "id": "E5-3",
