@@ -8,7 +8,7 @@ branch's copy of this file, so nothing an agent or a PR writes can widen what is
   apply    redo the merge from scratch and put the collected files in
   comment  write the PR comment
 
-Append-only logs (AUTO) keep both sides without an agent.
+The shared log (AUTO) needs no agent: entries the PR added move to files of their own.
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from pathlib import Path
 MAX_FILES = 20
 MAX_NOTES = 4000
 AUTO = ("progress.md",)
+ENTRY_DIR = "progress"
 PROTECTED = (
     ".github/*", ".claude/*", ".cursor/*", "tools/*", "tests/privacy/*",
     "AGENTS.md", "*/AGENTS.md", "CLAUDE.md", "*/CLAUDE.md",
@@ -66,7 +67,7 @@ def _merge(repo, head: str, base: str) -> dict[str, dict[int, str]]:
 def plan(repo, head: str, base: str) -> dict:
     """Merge, and say what may be fixed. Leaves the merge in progress for the agent."""
     stages = _merge(repo, head, base)
-    result = {"status": "conflicts", "files": [], "auto": [], "reason": ""}
+    result = {"status": "conflicts", "files": [], "auto": [], "moved": [], "reason": ""}
     if not stages:
         return result | {"status": "clean"}
     problems = []
@@ -79,8 +80,9 @@ def plan(repo, head: str, base: str) -> dict:
             problems.append(f"`{path}` is not a regular file")
         elif b"\0" in _git(repo, "show", f":2:{path}") + _git(repo, "show", f":3:{path}"):
             problems.append(f"`{path}` is binary")
-        elif path in AUTO and 1 in modes and _keep_both(repo, path) is not None:
+        elif path in AUTO and 1 in modes and (split := _split(repo, path)) is not None:
             result["auto"].append(path)
+            result["moved"] += split[1]
         else:
             result["files"].append(path)
     if len(result["files"]) > MAX_FILES:
@@ -154,14 +156,29 @@ def _entries(text: str) -> dict[str, str] | None:
     return entries
 
 
-def combine_log(*, base: str, start: str, head: str) -> str | None:
-    """Combine whole entries, base's first. None when that would mean guessing."""
+def _entry_file(heading: str) -> str | None:
+    slug = re.sub(r"[^a-z0-9]+", "-", heading.lower()).strip("-")[:80].strip("-")
+    return f"{ENTRY_DIR}/{slug}.md" if slug else None
+
+
+def split_log(*, base: str, start: str, head: str) -> tuple[str, dict[str, str]] | None:
+    """Return the log and {new file: text}, or None when that would mean guessing.
+
+    Entries only the PR added become files of their own, so they cannot conflict again. Entries
+    already in the log stay there, with whichever side edited them.
+    """
     ours, old, theirs = _entries(head), _entries(start), _entries(base)
     if ours is None or old is None or theirs is None:
         return None
-    merged = []
+    log, files = [], {}
     for heading in [*theirs, *(h for h in ours if h not in theirs)]:
         b, s, h = theirs.get(heading), old.get(heading), ours.get(heading)
+        if b is None and s is None:
+            path = _entry_file(heading)
+            if path is None or path in files:
+                return None
+            files[path] = h.removeprefix("#") + "\n"
+            continue
         if b == h or h == s:
             entry = b
         elif b == s:
@@ -170,16 +187,28 @@ def combine_log(*, base: str, start: str, head: str) -> str | None:
             return None
         if entry is None:
             return None  # one side removed it; a log should only grow
-        merged.append(entry)
-    return "\n\n".join(e for e in merged if e) + "\n"
+        log.append(entry)
+    return "\n\n".join(e for e in log if e) + "\n", files
 
 
-def _keep_both(repo, path: str) -> str | None:
+def _split(repo, path: str) -> tuple[str, dict[str, str]] | None:
     sides = {}
     for name, stage in (("base", 3), ("start", 1), ("head", 2)):
         text = _git(repo, "show", f":{stage}:{path}").decode("utf-8", errors="replace")
         sides[name] = text.replace("\r\n", "\n")
-    return combine_log(**sides)
+    result = split_log(**sides)
+    root = Path(repo)
+    if result is None or (root / ENTRY_DIR).is_symlink():
+        return None
+    for name, text in result[1].items():
+        target = root / name
+        if target.is_symlink() or target.is_dir():
+            return None
+        if target.is_file():
+            existing = target.read_bytes().decode("utf-8", errors="replace")
+            if existing.replace("\r\n", "\n") != text:
+                return None
+    return result
 
 
 def apply(repo, head: str, base: str, out) -> None:
@@ -197,8 +226,14 @@ def apply(repo, head: str, base: str, out) -> None:
             _check_issue_map(repo, head, base, data.decode("utf-8"))
         (Path(repo) / path).write_bytes(data)
     for path in planned["auto"]:
-        (Path(repo) / path).write_bytes((_keep_both(repo, path) or "").encode("utf-8"))
-    _git(repo, "add", "--", *planned["files"], *planned["auto"])
+        split = _split(repo, path)
+        if split is None:
+            raise Rejected(f"{path} can no longer be combined")
+        for name, text in [(path, split[0]), *split[1].items()]:
+            check_text(name, text)
+            (Path(repo) / name).parent.mkdir(exist_ok=True)
+            (Path(repo) / name).write_bytes(text.encode("utf-8"))
+    _git(repo, "add", "--", *planned["files"], *planned["auto"], *planned["moved"])
 
 
 def _clean_notes(notes: str) -> str:
@@ -209,8 +244,8 @@ def _clean_notes(notes: str) -> str:
 
 
 def comment(
-    *, outcome: str, fixer: str, files: list[str], auto: list[str], notes: str, commit: str,
-    ci_starts: bool, reason: str,
+    *, outcome: str, fixer: str, files: list[str], auto: list[str], moved: list[str], notes: str,
+    commit: str, ci_starts: bool, reason: str,
 ) -> str:
     if outcome == "clean":
         return "### Merge conflicts\n\nThis PR has no merge conflicts, so nothing was changed.\n"
@@ -221,6 +256,9 @@ def comment(
     if auto:
         lines += ["", "**Merged automatically (kept both sides):**", ""]
         lines += [f"- `{path}`" for path in auto]
+    if moved:
+        lines += ["", "**This PR's log entries, moved to files of their own:**", ""]
+        lines += [f"- `{path}`" for path in moved]
     if files:
         lines += ["", f"**Resolved by {AGENTS[fixer]}:**", ""]
         lines += [f"- `{path}`" for path in files]
@@ -231,7 +269,7 @@ def comment(
         lines += [
             "",
             "Checks and review do not start by themselves on this commit, because the `GH_PAT` "
-            "secret is not set. Push any commit to start them.",
+            "secret is not set. Approve the waiting runs on this PR, or push a commit.",
         ]
     return "\n".join(lines) + "\n"
 
@@ -277,6 +315,7 @@ def main(argv: list[str] | None = None) -> int:
             print(comment(
                 outcome=args.outcome, fixer=args.fixer,
                 files=planned.get("files", []), auto=planned.get("auto", []),
+                moved=planned.get("moved", []),
                 notes=notes.read_text(encoding="utf-8", errors="replace")
                 if notes and notes.is_file() else "",
                 commit=args.commit, ci_starts=args.ci_starts,

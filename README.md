@@ -4,7 +4,7 @@ Turn one job posting into a sourced outreach plan: a suspected recruiter, two te
 labelled unverified email-format guess, and a one-page Jake's-format resume built only from your
 own facts. Medici never sends anything for you.
 
-Status: Phase 0 setup. See `docs/build-plan.md`, `progress.md` and `issue_map.json`.
+Status: Phase 0 setup. See `docs/build-plan.md`, `progress/` and `issue_map.json`.
 
 ## Quick start
 
