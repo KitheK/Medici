@@ -302,7 +302,8 @@ def test_comment_says_what_was_fixed_by_whom_and_where():
 def test_comment_separates_automatic_merges_from_agent_fixes():
     text = comment(files=[], auto=["progress.md"], notes="")
     assert "`progress.md`" in text
-    assert "kept both sides" in text
+    assert "without an agent" in text
+    assert "kept both sides" not in text
     assert "Cursor" not in text  # no agent ran, so none is credited
     assert "did not leave notes" not in text
 

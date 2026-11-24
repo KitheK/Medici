@@ -254,7 +254,7 @@ def comment(
         return f"### Merge conflicts: needs a human\n\nNothing was pushed. Reason: {why}.\n"
     lines = ["### Fixed merge conflicts", "", f"Merged the base branch in {commit}."]
     if auto:
-        lines += ["", "**Merged automatically (kept both sides):**", ""]
+        lines += ["", "**Merged without an agent:**", ""]
         lines += [f"- `{path}`" for path in auto]
     if moved:
         lines += ["", "**This PR's log entries, moved to files of their own:**", ""]
